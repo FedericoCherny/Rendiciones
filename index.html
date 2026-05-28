@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.10.0/lib/msal-browser.min.js"></script>
   <style>
     :root {
       --bg: #f5f5f3;
@@ -475,13 +475,20 @@ const COMPROBANTES_PATH = 'Documentos compartidos/Operaciones y Mantenimiento/IA
 let msalInstance = null;
 let msAccount = null;
 
-function initMsal() {
+async function initMsal() {
   if (msalInstance) return;
-  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
-  const accounts = msalInstance.getAllAccounts();
-  if (accounts.length) {
-    msAccount = accounts[0];
-    updateLoginBtn();
+  try {
+    msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+    await msalInstance.initialize();
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length) {
+      msAccount = accounts[0];
+      updateLoginBtn();
+    }
+  } catch(e) {
+    console.error('MSAL init error:', e);
+    msalInstance = null;
+    throw e;
   }
 }
 
@@ -500,7 +507,7 @@ function updateLoginBtn() {
 }
 
 async function toggleMsLogin() {
-  initMsal();
+  await initMsal();
   if (msAccount) {
     msalInstance.logoutPopup();
     msAccount = null;
@@ -517,7 +524,7 @@ async function toggleMsLogin() {
 }
 
 async function getMsToken() {
-  initMsal();
+  await initMsal();
   if (!msAccount) {
     await toggleMsLogin();
     if (!msAccount) throw new Error('Necesitás iniciar sesión con Microsoft primero.');
@@ -774,7 +781,7 @@ if ('serviceWorker' in navigator) {
 
 // Update analyze button state on load
 document.getElementById('analyzeBtn').disabled = !getApiKey();
-try { initMsal(); } catch(e) {}
+initMsal().catch(() => {});
 </script>
 </body>
 </html>
