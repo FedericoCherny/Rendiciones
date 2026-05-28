@@ -12,6 +12,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
   <style>
     :root {
       --bg: #f5f5f3;
@@ -151,9 +152,14 @@
 </head>
 <body>
 <div class="app">
-  <div class="header">
-    <h1>📋 Rendiciones IA</h1>
-    <p id="headerSub">Cargá comprobantes y extraé datos automáticamente</p>
+  <div class="header" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h1>📋 Rendiciones IA</h1>
+      <p id="headerSub">Cargá comprobantes y extraé datos automáticamente</p>
+    </div>
+    <button id="msLoginBtn" onclick="toggleMsLogin()" style="border:1px solid var(--border);background:var(--surface2);color:var(--text2);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">
+      Iniciar sesión
+    </button>
   </div>
 
   <div class="content">
@@ -210,9 +216,11 @@
 
 <script>
 // ── State ──────────────────────────────────────────────
-const ADMIN_PIN_KEY = 'rend_admin_pin';
-const FIELDS_KEY    = 'rend_fields';
-const API_KEY_KEY   = 'rend_api_key';
+const ADMIN_PIN_KEY  = 'rend_admin_pin';
+const FIELDS_KEY     = 'rend_fields';
+const API_KEY_KEY    = 'rend_api_key';
+const WEBHOOK_KEY    = 'rend_webhook_url';
+const SP_MODE_KEY    = 'rend_sp_mode'; // 'append' | 'new'
 
 const DEFAULT_FIELDS = [
   { name: 'Fecha',               desc: 'Fecha del comprobante (DD/MM/AAAA)' },
@@ -231,13 +239,17 @@ let results = JSON.parse(localStorage.getItem('rend_results') || '[]');
 let cancelled = false;
 let adminUnlocked = false;
 
-function getFields() { return JSON.parse(localStorage.getItem(FIELDS_KEY) || 'null') || DEFAULT_FIELDS; }
-function saveFields(f) { localStorage.setItem(FIELDS_KEY, JSON.stringify(f)); }
-function getApiKey() { return localStorage.getItem(API_KEY_KEY) || ''; }
-function saveApiKey(k) { localStorage.setItem(API_KEY_KEY, k); }
-function getPin() { return localStorage.getItem(ADMIN_PIN_KEY) || ''; }
-function savePin(p) { localStorage.setItem(ADMIN_PIN_KEY, p); }
-function saveResults() { try { localStorage.setItem('rend_results', JSON.stringify(results)); } catch(e){} }
+function getFields()    { return JSON.parse(localStorage.getItem(FIELDS_KEY) || 'null') || DEFAULT_FIELDS; }
+function saveFields(f)  { localStorage.setItem(FIELDS_KEY, JSON.stringify(f)); }
+function getApiKey()    { return localStorage.getItem(API_KEY_KEY) || ''; }
+function saveApiKey(k)  { localStorage.setItem(API_KEY_KEY, k); }
+function getPin()       { return localStorage.getItem(ADMIN_PIN_KEY) || ''; }
+function savePin(p)     { localStorage.setItem(ADMIN_PIN_KEY, p); }
+function getWebhook()   { return localStorage.getItem(WEBHOOK_KEY) || ''; }
+function saveWebhook(u) { localStorage.setItem(WEBHOOK_KEY, u); }
+function getSpMode()    { return localStorage.getItem(SP_MODE_KEY) || 'append'; }
+function saveSpMode(m)  { localStorage.setItem(SP_MODE_KEY, m); }
+function saveResults()  { try { localStorage.setItem('rend_results', JSON.stringify(results)); } catch(e){} }
 
 // ── Navigation ─────────────────────────────────────────
 function switchPanel(name) {
@@ -420,9 +432,12 @@ function renderResults() {
   }).join('');
 
   area.innerHTML = `
-    <div class="row" style="margin-bottom:16px">
-      <button class="btn btn-green btn-sm" onclick="exportExcel()">⬇ Excel</button>
-      <button class="btn btn-secondary btn-sm" onclick="clearResults()">🗑 Limpiar</button>
+    <div style="margin-bottom:16px;display:flex;flex-direction:column;gap:8px">
+      <div class="row">
+        <button class="btn btn-green btn-sm" onclick="exportExcel()">⬇ Excel local</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearResults()">🗑 Limpiar</button>
+      </div>
+      <button class="btn btn-primary" onclick="sendToSharePoint('append')" style="font-size:14px;padding:12px">☁️ Enviar a SharePoint</button>
     </div>
     ${cards}`;
 }
@@ -440,6 +455,162 @@ function exportExcel() {
   ws['!cols'] = headers.map((h, i) => ({ wch: Math.min(Math.max(h.length, ...rows.map(r => String(r[i]||'').length)) + 2, 40) }));
   XLSX.utils.book_append_sheet(wb, ws, 'Rendiciones');
   XLSX.writeFile(wb, `rendiciones_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ── Microsoft Auth (MSAL) ──────────────────────────────
+const MSAL_CONFIG = {
+  auth: {
+    clientId: 'd1719d1c-2dcd-4ced-98f6-b474a926ac4f',
+    authority: 'https://login.microsoftonline.com/f5b218f2-cdf7-4ce4-951b-9f3fd53d4202',
+    redirectUri: 'https://federicocherny.github.io/Rendiciones/'
+  },
+  cache: { cacheLocation: 'localStorage' }
+};
+const SCOPES = ['Files.ReadWrite', 'Sites.Read.All', 'User.Read'];
+const SHAREPOINT_HOST = 'aerationserviciosarg.sharepoint.com';
+const SITE_NAME = 'AerationServicios'; // ajustar si es distinto
+const FOLDER_PATH = 'Documentos compartidos/Operaciones y Mantenimiento/IA/Admin/Pendientes';
+const COMPROBANTES_PATH = 'Documentos compartidos/Operaciones y Mantenimiento/IA/Admin/Comprobantes';
+
+let msalInstance = null;
+let msAccount = null;
+
+function initMsal() {
+  if (msalInstance) return;
+  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length) {
+    msAccount = accounts[0];
+    updateLoginBtn();
+  }
+}
+
+function updateLoginBtn() {
+  const btn = document.getElementById('msLoginBtn');
+  if (!btn) return;
+  if (msAccount) {
+    btn.textContent = '✅ ' + (msAccount.name || msAccount.username).split(' ')[0];
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+  } else {
+    btn.textContent = 'Iniciar sesión';
+    btn.style.color = 'var(--text2)';
+    btn.style.borderColor = 'var(--border)';
+  }
+}
+
+async function toggleMsLogin() {
+  initMsal();
+  if (msAccount) {
+    msalInstance.logoutPopup();
+    msAccount = null;
+    updateLoginBtn();
+    return;
+  }
+  try {
+    const resp = await msalInstance.loginPopup({ scopes: SCOPES });
+    msAccount = resp.account;
+    updateLoginBtn();
+  } catch(e) {
+    if (!e.message?.includes('cancelled')) alert('Error al iniciar sesión: ' + e.message);
+  }
+}
+
+async function getMsToken() {
+  initMsal();
+  if (!msAccount) {
+    await toggleMsLogin();
+    if (!msAccount) throw new Error('Necesitás iniciar sesión con Microsoft primero.');
+  }
+  const resp = await msalInstance.acquireTokenSilent({ scopes: SCOPES, account: msAccount })
+    .catch(() => msalInstance.acquireTokenPopup({ scopes: SCOPES, account: msAccount }));
+  return resp.accessToken;
+}
+
+async function getSiteId(token) {
+  const resp = await fetch(
+    `https://graph.microsoft.com/v1.0/sites/${SHAREPOINT_HOST}:/sites/${SITE_NAME}`,
+    { headers: { Authorization: 'Bearer ' + token } }
+  );
+  if (!resp.ok) {
+    // Intentar con root site
+    const resp2 = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${SHAREPOINT_HOST}`,
+      { headers: { Authorization: 'Bearer ' + token } }
+    );
+    if (!resp2.ok) throw new Error('No se pudo acceder al sitio de SharePoint.');
+    const data = await resp2.json();
+    return data.id;
+  }
+  const data = await resp.json();
+  return data.id;
+}
+
+async function uploadToSharePoint(token, siteId, folderPath, fileName, content, isBase64 = false) {
+  const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
+  const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}/${encodeURIComponent(fileName)}:/content`;
+  const body = isBase64
+    ? Uint8Array.from(atob(content), c => c.charCodeAt(0))
+    : new Blob([content], { type: 'application/json' });
+  const resp = await fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: 'Bearer ' + token },
+    body
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || 'HTTP ' + resp.status);
+  }
+  return await resp.json();
+}
+
+async function sendToSharePoint(mode) {
+  const btn = event.target;
+  const original = btn.textContent;
+  btn.textContent = '⏳ Conectando...';
+  btn.disabled = true;
+
+  try {
+    const token = await getMsToken();
+    btn.textContent = '⏳ Obteniendo sitio...';
+    const siteId = await getSiteId(token);
+
+    const fields = getFields().filter(f => f.name.trim());
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+    // 1. Subir comprobantes originales
+    const doneFiles = files.filter(f => f.status === 'done');
+    for (let i = 0; i < doneFiles.length; i++) {
+      const item = doneFiles[i];
+      btn.textContent = `⏳ Subiendo ${item.file.name}...`;
+      const b64 = await fileToBase64(item.file);
+      await uploadToSharePoint(token, siteId, COMPROBANTES_PATH, item.file.name, b64, true);
+    }
+
+    // 2. Subir JSON con los datos extraídos
+    btn.textContent = '⏳ Guardando datos...';
+    const payload = {
+      modo: mode,
+      fecha_envio: new Date().toLocaleString('es-AR'),
+      total_registros: results.length,
+      campos: fields.map(f => f.name),
+      registros: results.map(r => {
+        const row = { archivo: r['__archivo__'] || '', fecha_analisis: r['__fecha_analisis__'] || '' };
+        fields.forEach(f => { row[f.name] = r[f.name] != null ? r[f.name] : ''; });
+        return row;
+      })
+    };
+    const jsonFileName = `rendicion_${timestamp}.json`;
+    await uploadToSharePoint(token, siteId, FOLDER_PATH, jsonFileName, JSON.stringify(payload, null, 2));
+
+    alert(`✅ Listo!\n\n• ${doneFiles.length} comprobante(s) guardado(s) en SharePoint\n• Datos enviados para procesar en Excel\n\nPower Automate va a insertar las filas en unos segundos.`);
+
+  } catch(e) {
+    alert('❌ Error: ' + e.message);
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
 }
 
 function clearResults() {
@@ -521,6 +692,15 @@ function renderAdminUnlocked(el) {
     </div>
 
     <div class="card">
+      <div class="card-label">Integración SharePoint</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Los datos se suben directamente a SharePoint con tu cuenta Microsoft.</p>
+      <p class="hint">📁 Comprobantes → <strong>Operaciones y Mantenimiento/IA/Admin/Comprobantes</strong></p>
+      <p class="hint" style="margin-top:6px">📋 Datos JSON → <strong>Operaciones y Mantenimiento/IA/Admin/Pendientes</strong></p>
+      <div class="gap"></div>
+      <button class="btn btn-secondary" onclick="toggleMsLogin()">🔑 Iniciar sesión con Microsoft</button>
+    </div>
+
+    <div class="card">
       <div class="card-label">Seguridad</div>
       <label>Cambiar PIN de admin</label>
       <input type="password" inputmode="numeric" id="newPinChange" placeholder="Nuevo PIN" maxlength="8" />
@@ -553,6 +733,30 @@ function removeField(i) {
   renderAdmin();
 }
 
+async function testWebhook() {
+  const url = document.getElementById('webhookInput').value.trim();
+  if (!url) { alert('Ingresá la URL del webhook primero.'); return; }
+  const status = document.getElementById('webhookStatus');
+  status.textContent = '⏳ Probando...';
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test: true, mensaje: 'Prueba de conexión desde Rendiciones IA' })
+    });
+    if (resp.ok || resp.status === 202) {
+      status.textContent = '✅ Conectado correctamente';
+      status.style.color = 'var(--green)';
+    } else {
+      status.textContent = '⚠️ HTTP ' + resp.status;
+      status.style.color = 'var(--amber)';
+    }
+  } catch(e) {
+    status.textContent = '❌ Sin conexión';
+    status.style.color = 'var(--red)';
+  }
+}
+
 function changePin() {
   const p = document.getElementById('newPinChange').value.trim();
   if (p.length < 4) { alert('El PIN debe tener al menos 4 dígitos.'); return; }
@@ -570,6 +774,7 @@ if ('serviceWorker' in navigator) {
 
 // Update analyze button state on load
 document.getElementById('analyzeBtn').disabled = !getApiKey();
+try { initMsal(); } catch(e) {}
 </script>
 </body>
 </html>
