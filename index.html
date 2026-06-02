@@ -243,51 +243,81 @@
       <div id="rendResultsArea"></div>
     </div>
 
-    <!-- ═══ PANEL: Notas de Pedido ═══ -->
-    <div class="panel" id="panel-np">
-      <!-- Paso 1 -->
+    <!-- ═══ PANEL: NP Locales ═══ -->
+    <div class="panel" id="panel-np-loc">
       <div class="card">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="step-num active" id="np-num1">1</div>
+          <div class="step-num active" id="np-loc-num1">1</div>
           <div><div style="font-size:15px;font-weight:600">Subir archivos de Proforma</div><div style="font-size:12px;color:var(--text2)">PDF, JPG, PNG — podés subir varios</div></div>
         </div>
-        <div class="drop-zone" id="npDropZone" onclick="document.getElementById('np-file-input').click()">
+        <div class="drop-zone" id="np-locDropZone" onclick="document.getElementById('np-loc-file-input').click()">
           <div class="drop-icon">📄</div>
           <p>Tocá para seleccionar archivos</p>
           <span>PDF, JPG, JPEG, PNG</span>
         </div>
-        <input type="file" id="np-file-input" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none" onchange="npHandleFiles(this.files)" />
-        <div id="np-file-list"></div>
+        <input type="file" id="np-loc-file-input" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none" onchange="npHandleFiles(event,'np-loc')" />
+        <div id="np-loc-file-list"></div>
       </div>
-      <!-- Paso 2 -->
-      <div class="card np-step-disabled" id="np-step2">
+      <div class="card np-step-disabled" id="np-loc-step2">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="step-num" id="np-num2">2</div>
-          <div><div style="font-size:15px;font-weight:600">Datos del Registro NP</div><div style="font-size:12px;color:var(--text2)">Completá los campos manuales y extraé con IA</div></div>
+          <div class="step-num" id="np-loc-num2">2</div>
+          <div><div style="font-size:15px;font-weight:600">Datos</div><div style="font-size:12px;color:var(--text2)">Completá los campos manuales y extraé con IA</div></div>
         </div>
         <div class="card-label">Campos manuales</div>
-        <div id="np-manual-fields-inputs"></div>
+        <div id="np-loc-manual-inputs"></div>
         <div class="card-label" style="margin-top:14px">Extracción con IA</div>
-        <button class="btn btn-primary" id="np-extract-btn" onclick="npExtractAll()" disabled>✦ Extraer datos con IA</button>
-        <div id="np-status-bar"></div>
-        <div id="np-preview-area"></div>
+        <button class="btn btn-primary" id="np-loc-extract-btn" onclick="npExtractAll('np-loc')" disabled>✦ Extraer datos con IA</button>
+        <div id="np-loc-status-bar"></div>
+        <div id="np-loc-preview-area"></div>
       </div>
-      <!-- Paso 3 -->
-      <div class="card np-step-disabled" id="np-step3">
+      <div class="card np-step-disabled" id="np-loc-step3">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div class="step-num" id="np-num3">3</div>
-          <div><div style="font-size:15px;font-weight:600">Guardar</div><div style="font-size:12px;color:var(--text2)">Insertá filas y descargá las Notas de Pedido</div></div>
+          <div class="step-num" id="np-loc-num3">3</div>
+          <div><div style="font-size:15px;font-weight:600">Guardar</div><div style="font-size:12px;color:var(--text2)">Guardá en registro y descargá la NP</div></div>
         </div>
-        <button class="btn btn-primary" id="np-btn-registro" onclick="npShowModal()" disabled style="margin-bottom:8px">☁️ Guardar en SharePoint</button>
-        <div id="np-template-selector" style="display:none;margin-bottom:8px">
-          <div class="card-label" style="margin-bottom:8px">Elegí la plantilla de NP</div>
-          <div class="row">
-            <button class="btn btn-secondary" id="np-btn-int" onclick="npGenerateAllNP('internacional')" disabled>🌐 Internacional</button>
-            <button class="btn btn-secondary" id="np-btn-loc" onclick="npGenerateAllNP('local')" disabled>🏠 Local</button>
-          </div>
+        <button class="btn btn-primary" id="np-loc-btn-registro" onclick="npShowModal('np-loc')" disabled style="margin-bottom:8px">☁️ Guardar en SharePoint</button>
+        <button class="btn btn-secondary" id="np-loc-btn-np" onclick="npDescargarNP('np-loc')" disabled style="margin-bottom:8px">📄 Descargar NP (desde plantilla SharePoint)</button>
+        <button class="btn btn-secondary" onclick="npClearAll('np-loc')" style="color:var(--red)">🗑 Limpiar todo</button>
+        <div id="np-loc-gen-status"></div>
+      </div>
+    </div>
+
+    <!-- ═══ PANEL: NP Internacionales ═══ -->
+    <div class="panel" id="panel-np-int">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="step-num active" id="np-int-num1">1</div>
+          <div><div style="font-size:15px;font-weight:600">Subir archivos de Proforma</div><div style="font-size:12px;color:var(--text2)">PDF, JPG, PNG — podés subir varios</div></div>
         </div>
-        <button class="btn btn-secondary" onclick="npClearAll()" style="color:var(--red)">🗑 Limpiar todo</button>
-        <div id="np-gen-status"></div>
+        <div class="drop-zone" id="np-intDropZone" onclick="document.getElementById('np-int-file-input').click()">
+          <div class="drop-icon">🌐</div>
+          <p>Tocá para seleccionar archivos</p>
+          <span>PDF, JPG, JPEG, PNG</span>
+        </div>
+        <input type="file" id="np-int-file-input" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none" onchange="npHandleFiles(event,'np-int')" />
+        <div id="np-int-file-list"></div>
+      </div>
+      <div class="card np-step-disabled" id="np-int-step2">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="step-num" id="np-int-num2">2</div>
+          <div><div style="font-size:15px;font-weight:600">Datos</div><div style="font-size:12px;color:var(--text2)">Completá los campos manuales y extraé con IA</div></div>
+        </div>
+        <div class="card-label">Campos manuales</div>
+        <div id="np-int-manual-inputs"></div>
+        <div class="card-label" style="margin-top:14px">Extracción con IA</div>
+        <button class="btn btn-primary" id="np-int-extract-btn" onclick="npExtractAll('np-int')" disabled>✦ Extraer datos con IA</button>
+        <div id="np-int-status-bar"></div>
+        <div id="np-int-preview-area"></div>
+      </div>
+      <div class="card np-step-disabled" id="np-int-step3">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="step-num" id="np-int-num3">3</div>
+          <div><div style="font-size:15px;font-weight:600">Guardar</div><div style="font-size:12px;color:var(--text2)">Guardá en registro y descargá la NP</div></div>
+        </div>
+        <button class="btn btn-primary" id="np-int-btn-registro" onclick="npShowModal('np-int')" disabled style="margin-bottom:8px">☁️ Guardar en SharePoint</button>
+        <button class="btn btn-secondary" id="np-int-btn-np" onclick="npDescargarNP('np-int')" disabled style="margin-bottom:8px">📄 Descargar NP (desde plantilla SharePoint)</button>
+        <button class="btn btn-secondary" onclick="npClearAll('np-int')" style="color:var(--red)">🗑 Limpiar todo</button>
+        <div id="np-int-gen-status"></div>
       </div>
     </div>
 
@@ -307,20 +337,53 @@
       </div>
     </div>
 
-    <!-- ═══ PANEL: Config NP ═══ -->
-    <div class="panel" id="panel-cfg-np">
+    <!-- ═══ PANEL: Config NP Locales ═══ -->
+    <div class="panel" id="panel-cfg-np-loc">
       <div class="card">
-        <div class="card-label">Campos que extrae la IA — Notas de Pedido</div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Estos campos se extraen automáticamente de la Proforma.</p>
-        <div id="npFieldList"></div>
-        <button class="btn btn-secondary" onclick="npAddField()" style="margin-top:4px">+ Agregar campo IA</button>
+        <div class="card-label">Campos IA — NP Locales</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">La IA extrae estos campos de la Proforma.</p>
+        <div id="np-loc-ia-field-list"></div>
+        <button class="btn btn-secondary" onclick="npCfgAddIA('np-loc')" style="margin-top:4px">+ Agregar campo IA</button>
       </div>
       <div class="card">
-        <div class="card-label">Campos manuales — Notas de Pedido</div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">El usuario completa estos campos una vez y se aplican a todos los archivos de la sesión.</p>
-        <div id="npManualFieldList"></div>
-        <button class="btn btn-secondary" onclick="npAddManualField()" style="margin-top:4px">+ Agregar campo manual</button>
-        <p class="hint" style="margin-top:10px">Tip: agregá campos como "NP Nº", "IMP Nº", "Obra/Cliente", "Responsable", "Equipos/Servicios".</p>
+        <div class="card-label">Campos manuales — NP Locales</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Se completan una vez y se aplican a todos los archivos.</p>
+        <div id="np-loc-manual-field-list"></div>
+        <button class="btn btn-secondary" onclick="npCfgAddManual('np-loc')" style="margin-top:4px">+ Agregar campo manual</button>
+      </div>
+      <div class="card">
+        <div class="card-label">Plantilla NP en SharePoint</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Seleccioná el archivo .xlsx de plantilla. La app lo descargará, completará y te lo devolverá.</p>
+        <div class="sp-selected" style="margin-bottom:8px">
+          <span id="np-loc-tmpl-label">Sin seleccionar</span>
+          <button class="sp-browse-btn" onclick="fbOpen('file','np-loc-tmpl')">Seleccionar</button>
+        </div>
+        <p class="hint" id="np-loc-tmpl-hint"></p>
+      </div>
+    </div>
+
+    <!-- ═══ PANEL: Config NP Internacionales ═══ -->
+    <div class="panel" id="panel-cfg-np-int">
+      <div class="card">
+        <div class="card-label">Campos IA — NP Internacionales</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">La IA extrae estos campos de la Proforma.</p>
+        <div id="np-int-ia-field-list"></div>
+        <button class="btn btn-secondary" onclick="npCfgAddIA('np-int')" style="margin-top:4px">+ Agregar campo IA</button>
+      </div>
+      <div class="card">
+        <div class="card-label">Campos manuales — NP Internacionales</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Se completan una vez y se aplican a todos los archivos.</p>
+        <div id="np-int-manual-field-list"></div>
+        <button class="btn btn-secondary" onclick="npCfgAddManual('np-int')" style="margin-top:4px">+ Agregar campo manual</button>
+      </div>
+      <div class="card">
+        <div class="card-label">Plantilla NP en SharePoint</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Seleccioná el archivo .xlsx de plantilla. La app lo descargará, completará y te lo devolverá.</p>
+        <div class="sp-selected" style="margin-bottom:8px">
+          <span id="np-int-tmpl-label">Sin seleccionar</span>
+          <button class="sp-browse-btn" onclick="fbOpen('file','np-int-tmpl')">Seleccionar</button>
+        </div>
+        <p class="hint" id="np-int-tmpl-hint"></p>
       </div>
     </div>
 
@@ -332,26 +395,13 @@
   </div>
 
   <nav class="nav">
-    <button class="nav-btn active" id="nav-rend" onclick="switchPanel('rend')">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      Rendiciones
-    </button>
-    <button class="nav-btn" id="nav-np" onclick="switchPanel('np')">
-      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      Notas NP
-    </button>
-    <button class="nav-btn" id="nav-cfg-rend" onclick="switchPanel('cfg-rend')">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-      Config Rend
-    </button>
-    <button class="nav-btn" id="nav-cfg-np" onclick="switchPanel('cfg-np')">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-      Config NP
-    </button>
-    <button class="nav-btn" id="nav-admin" onclick="switchPanel('admin')">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M12 14c-5 0-8 2-8 3v1h16v-1c0-1-3-3-8-3z"/></svg>
-      Admin
-    </button>
+    <button class="nav-btn active" id="nav-rend" onclick="switchPanel('rend')"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Rendiciones</button>
+    <button class="nav-btn" id="nav-np-loc" onclick="switchPanel('np-loc')"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>NP Local</button>
+    <button class="nav-btn" id="nav-np-int" onclick="switchPanel('np-int')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>NP Intern.</button>
+    <button class="nav-btn" id="nav-cfg-rend" onclick="switchPanel('cfg-rend')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Cfg Rend</button>
+    <button class="nav-btn" id="nav-cfg-np-loc" onclick="switchPanel('cfg-np-loc')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Cfg Local</button>
+    <button class="nav-btn" id="nav-cfg-np-int" onclick="switchPanel('cfg-np-int')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Cfg Int.</button>
+    <button class="nav-btn" id="nav-admin" onclick="switchPanel('admin')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M12 14c-5 0-8 2-8 3v1h16v-1c0-1-3-3-8-3z"/></svg>Admin</button>
   </nav>
 </div>
 
@@ -537,8 +587,10 @@ function switchPanel(name) {
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'admin') renderAdmin();
   if (name === 'cfg-rend') { renderRendFields(); renderRendManualFields(); }
-  if (name === 'cfg-np') { renderNpFields(); renderNpManualFields(); }
+  if (name === 'cfg-np-loc') npCfgRender('np-loc');
+  if (name === 'cfg-np-int') npCfgRender('np-int');
   if (name === 'rend') renderRendResults();
+  if (name === 'np-loc' || name === 'np-int') npRenderManualInputs(name);
 }
 
 // ── Utils ──────────────────────────────────────────────
@@ -1193,126 +1245,223 @@ async function fbSelectFile(item, relativePath) {
 }
 
 
-// ── Notas de Pedido ────────────────────────────────────
-// Storage
-const NP_MANUAL_FIELDS_KEY = 'np_manual_fields';
-const REND_MANUAL_FIELDS_KEY = 'rend_manual_fields';
-const NP_SP_DEFAULTS_KEY = 'np_sp_defaults';
+// ── Notas de Pedido — unified multi-prefix ────────────
+// Storage keys per prefix
+const NP_KEYS = {
+  'np-loc': {
+    ia:     'np_loc_ia_fields',
+    manual: 'np_loc_manual_fields',
+    sp:     'np_loc_sp_defaults',
+    map:    'np_loc_col_mapping',
+    tmpl:   'np_loc_tmpl',
+  },
+  'np-int': {
+    ia:     'np_int_ia_fields',
+    manual: 'np_int_manual_fields',
+    sp:     'np_int_sp_defaults',
+    map:    'np_int_col_mapping',
+    tmpl:   'np_int_tmpl',
+  },
+};
 
-const DEFAULT_NP_MANUAL_FIELDS = [
-  { name: 'NP N\u00ba', desc: 'N\u00famero de NP (se carga autom\u00e1tico si eligi\u00f3s Excel existente)', auto: true },
-  { name: 'IMP N\u00ba', desc: 'N\u00famero de importaci\u00f3n' },
-  { name: 'Obra / Cliente', desc: 'Nombre de la obra o cliente' },
-  { name: 'Responsable', desc: 'Iniciales o nombre del responsable' },
-  { name: 'Equipos / Servicios', desc: 'Descripci\u00f3n de equipos o servicios' },
+const DEFAULT_NP_LOC_IA = [
+  { name: 'proveedor',         desc: 'Nombre completo del proveedor' },
+  { name: 'contacto',          desc: 'Nombre del contacto o vendedor' },
+  { name: 'telefono',          desc: 'Teléfono del proveedor' },
+  { name: 'email',             desc: 'Email del proveedor' },
+  { name: 'web',               desc: 'Sitio web del proveedor' },
+  { name: 'moneda',            desc: 'Moneda (ARS, USD, etc.)' },
+  { name: 'monto_total',       desc: 'Total como número sin símbolo' },
+  { name: 'bonificacion',      desc: 'Porcentaje de bonificación si aplica (ej: 0.05)' },
+  { name: 'iva',               desc: 'Porcentaje de IVA (ej: 0.21)' },
+  { name: 'plazo_pago',        desc: 'Forma de pago completa' },
+  { name: 'plazo_entrega',     desc: 'Plazo o tiempo de entrega' },
+  { name: 'lugar_entrega',     desc: 'Lugar de entrega indicado' },
+  { name: 'observaciones',     desc: 'Observaciones relevantes' },
 ];
-const DEFAULT_REND_MANUAL_FIELDS = [];
+const DEFAULT_NP_LOC_MANUAL = [
+  { name: 'NP N\u00ba',         desc: 'N\u00famero de NP (auto si Excel existente)', auto: true },
+  { name: 'IMP N\u00ba',        desc: 'N\u00famero de importaci\u00f3n' },
+  { name: 'Obra / Cliente',    desc: 'Nombre de la obra o cliente' },
+  { name: 'Responsable',       desc: 'Iniciales o nombre del responsable' },
+  { name: 'Supervisado por',   desc: 'Quien supervisó' },
+  { name: 'Lugar de Entrega',  desc: 'Lugar de entrega' },
+];
+const DEFAULT_NP_INT_IA = [
+  { name: 'proveedor',         desc: 'Nombre completo del proveedor' },
+  { name: 'atencion',          desc: 'Nombre del contacto o vendedor' },
+  { name: 'telefono',          desc: 'Teléfono del proveedor' },
+  { name: 'email',             desc: 'Email del proveedor' },
+  { name: 'ref_no',            desc: 'Número de referencia de la proforma' },
+  { name: 'fecha',             desc: 'Fecha en formato DD/MM/YYYY' },
+  { name: 'moneda',            desc: 'USD u otra moneda' },
+  { name: 'monto_total',       desc: 'Total como número sin símbolo' },
+  { name: 'plazo_pago',        desc: 'Payment terms completos' },
+  { name: 'plazo_entrega',     desc: 'Plazo o tiempo de entrega' },
+  { name: 'incoterm',          desc: 'Incoterm completo con lugar' },
+  { name: 'empresa_compradora',desc: 'Nombre de la empresa compradora' },
+  { name: 'observaciones',     desc: 'Remarks o notas, máx 200 caracteres' },
+];
+const DEFAULT_NP_INT_MANUAL = [
+  { name: 'NP N\u00ba',         desc: 'N\u00famero de NP (auto si Excel existente)', auto: true },
+  { name: 'IMP N\u00ba',        desc: 'N\u00famero de importaci\u00f3n' },
+  { name: 'Obra / Cliente',    desc: 'Nombre de la obra o cliente' },
+  { name: 'Responsable',       desc: 'Iniciales o nombre del responsable' },
+];
 
-function getNpManualFields() { return JSON.parse(localStorage.getItem(NP_MANUAL_FIELDS_KEY)||'null') || DEFAULT_NP_MANUAL_FIELDS; }
-function saveNpManualFields(f) { localStorage.setItem(NP_MANUAL_FIELDS_KEY, JSON.stringify(f)); }
-function getRendManualFields() { return JSON.parse(localStorage.getItem(REND_MANUAL_FIELDS_KEY)||'null') || DEFAULT_REND_MANUAL_FIELDS; }
-function saveRendManualFields(f) { localStorage.setItem(REND_MANUAL_FIELDS_KEY, JSON.stringify(f)); }
-function getNpSpDefaults() { return JSON.parse(localStorage.getItem(NP_SP_DEFAULTS_KEY)||'null') || {mode:'existing'}; }
-function saveNpSpDefaults(d) { localStorage.setItem(NP_SP_DEFAULTS_KEY, JSON.stringify(d)); }
+const NP_DEFAULTS = {
+  'np-loc': { ia: DEFAULT_NP_LOC_IA, manual: DEFAULT_NP_LOC_MANUAL },
+  'np-int': { ia: DEFAULT_NP_INT_IA, manual: DEFAULT_NP_INT_MANUAL },
+};
 
-// NP files state
-let rendManualValues = {};
-let npFiles = []; // [{file, status, b64, result}]
-let npExtractedList = []; // one per file
-let npManualValues = {}; // {fieldName: value}
+function npGetIA(pfx)     { return JSON.parse(localStorage.getItem(NP_KEYS[pfx].ia)    || 'null') || NP_DEFAULTS[pfx].ia; }
+function npSaveIA(pfx,f)  { localStorage.setItem(NP_KEYS[pfx].ia, JSON.stringify(f)); }
+function npGetManual(pfx) { return JSON.parse(localStorage.getItem(NP_KEYS[pfx].manual)|| 'null') || NP_DEFAULTS[pfx].manual; }
+function npSaveManual(pfx,f){ localStorage.setItem(NP_KEYS[pfx].manual, JSON.stringify(f)); }
+function npGetSp(pfx)     { return JSON.parse(localStorage.getItem(NP_KEYS[pfx].sp)   || 'null') || {mode:'existing'}; }
+function npSaveSp(pfx,d)  { localStorage.setItem(NP_KEYS[pfx].sp, JSON.stringify(d)); }
+function npGetTmpl(pfx)   { return JSON.parse(localStorage.getItem(NP_KEYS[pfx].tmpl) || 'null') || {}; }
+function npSaveTmpl(pfx,d){ localStorage.setItem(NP_KEYS[pfx].tmpl, JSON.stringify(d)); }
 
-// ── NP Config field editors ────────────────────────────
-function renderNpManualFields() {
-  const fields = getNpManualFields();
-  document.getElementById('npManualFieldList').innerHTML = fields.map((f,i) => `
-    <div class="field-row" draggable="true"
-      ondragstart="dragStart(event,'np-manual',${i})"
-      ondragover="dragOver(event)"
-      ondragleave="dragLeave(event)"
-      ondrop="dragDrop(event,'np-manual',${i})"
-      ondragend="dragEnd(event)">
-      <div class="field-row-top">
-        <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
-        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="npUpdateManualField(${i},'name',this.value)" />
-        <button class="remove-btn" onclick="npRemoveManualField(${i})">\u2715</button>
-      </div>
-      <input class="desc-input" value="${esc(f.desc||'')}" placeholder="Descripci\u00f3n (opcional)" oninput="npUpdateManualField(${i},'desc',this.value)" />
-    </div>`).join('');
+// Per-prefix state
+const npState = {
+  'np-loc': { files: [], extracted: [], manualValues: {} },
+  'np-int': { files: [], extracted: [], manualValues: {} },
+};
+
+// ── Config panel render ───────────────────────────────
+function npCfgRender(pfx) {
+  npCfgRenderIA(pfx);
+  npCfgRenderManual(pfx);
+  // Show template info
+  const tmpl = npGetTmpl(pfx);
+  const lbl = document.getElementById(pfx + '-tmpl-label');
+  const hint = document.getElementById(pfx + '-tmpl-hint');
+  if (lbl) lbl.textContent = tmpl.label || 'Sin seleccionar';
+  if (hint) hint.textContent = tmpl.label ? 'Guardado. Se descargará de SharePoint al generar la NP.' : '';
 }
-function npUpdateManualField(i,k,v){const f=getNpManualFields();f[i][k]=v;saveNpManualFields(f);}
-function npRemoveManualField(i){const f=getNpManualFields();f.splice(i,1);saveNpManualFields(f);renderNpManualFields();npRenderManualInputs();}
-function npAddManualField(){const f=getNpManualFields();f.push({name:'',desc:''});saveNpManualFields(f);renderNpManualFields();}
 
-function renderRendManualFields() {
-  const fields = getRendManualFields();
-  document.getElementById('rendManualFieldList').innerHTML = fields.map((f,i) => `
-    <div class="field-row" draggable="true"
-      ondragstart="dragStart(event,'rend-manual',${i})"
-      ondragover="dragOver(event)"
-      ondragleave="dragLeave(event)"
-      ondrop="dragDrop(event,'rend-manual',${i})"
-      ondragend="dragEnd(event)">
-      <div class="field-row-top">
-        <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
-        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="rendUpdateManualField(${i},'name',this.value)" />
-        <button class="remove-btn" onclick="rendRemoveManualField(${i})">\u2715</button>
-      </div>
-      <input class="desc-input" value="${esc(f.desc||'')}" placeholder="Descripci\u00f3n (opcional)" oninput="rendUpdateManualField(${i},'desc',this.value)" />
-    </div>`).join('');
-}
-function rendUpdateManualField(i,k,v){const f=getRendManualFields();f[i][k]=v;saveRendManualFields(f);}
-function rendRemoveManualField(i){const f=getRendManualFields();f.splice(i,1);saveRendManualFields(f);renderRendManualFields();}
-function rendAddManualField(){const f=getRendManualFields();f.push({name:'',desc:''});saveRendManualFields(f);renderRendManualFields();}
-
-// ── NP manual inputs in panel ─────────────────────────
-function npRenderManualInputs() {
-  const fields = getNpManualFields();
-  const el = document.getElementById('np-manual-fields-inputs');
+function npCfgRenderIA(pfx) {
+  const fields = npGetIA(pfx);
+  const el = document.getElementById(pfx + '-ia-field-list');
   if (!el) return;
   el.innerHTML = fields.map((f,i) => `
-    <div style="margin-bottom:10px">
-      <label>${esc(f.name)}${f.auto?' <span style=\"font-size:11px;color:var(--text3)\">(auto si Excel existente)</span>':''}</label>
-      <input type="text" id="np-manual-${i}" placeholder="${esc(f.desc||f.name)}" value="${esc(npManualValues[f.name]||'')}" oninput="npManualValues['${f.name.replace(/'/g,"\\'").replace(/"/g,'\\"')}'] = this.value" />
+    <div class="field-row" draggable="true"
+      ondragstart="dragStart(event,'${pfx}-ia',${i})"
+      ondragover="dragOver(event)" ondragleave="dragLeave(event)"
+      ondrop="dragDrop(event,'${pfx}-ia',${i})" ondragend="dragEnd(event)">
+      <div class="field-row-top">
+        <span class="drag-handle">&#8286;</span>
+        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="npGetIA('${pfx}')[${i}].name=this.value;npSaveIA('${pfx}',npGetIA('${pfx}'))" />
+        <button class="remove-btn" onclick="npCfgRemoveIA('${pfx}',${i})">&#x2715;</button>
+      </div>
+      <input class="desc-input" value="${esc(f.desc||'')}" placeholder="Instrucción para la IA" oninput="npGetIA('${pfx}')[${i}].desc=this.value;npSaveIA('${pfx}',npGetIA('${pfx}'))" />
     </div>`).join('');
 }
 
-// ── NP manual inputs in Rendiciones panel ────────────
-function rendRenderManualInputs() {
-  // Insert manual fields section above the results in Rendiciones panel
-  // (called after analyze)
+function npCfgRenderManual(pfx) {
+  const fields = npGetManual(pfx);
+  const el = document.getElementById(pfx + '-manual-field-list');
+  if (!el) return;
+  el.innerHTML = fields.map((f,i) => `
+    <div class="field-row" draggable="true"
+      ondragstart="dragStart(event,'${pfx}-manual',${i})"
+      ondragover="dragOver(event)" ondragleave="dragLeave(event)"
+      ondrop="dragDrop(event,'${pfx}-manual',${i})" ondragend="dragEnd(event)">
+      <div class="field-row-top">
+        <span class="drag-handle">&#8286;</span>
+        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="npGetManual('${pfx}')[${i}].name=this.value;npSaveManual('${pfx}',npGetManual('${pfx}'))" />
+        <button class="remove-btn" onclick="npCfgRemoveManual('${pfx}',${i})">&#x2715;</button>
+      </div>
+      <input class="desc-input" value="${esc(f.desc||'')}" placeholder="Descripción (opcional)" oninput="npGetManual('${pfx}')[${i}].desc=this.value;npSaveManual('${pfx}',npGetManual('${pfx}'))" />
+    </div>`).join('');
 }
 
-// ── NP file handling ──────────────────────────────────
-const npDropZone = document.getElementById('npDropZone');
-if (npDropZone) {
-  npDropZone.addEventListener('dragover', e=>{e.preventDefault();npDropZone.classList.add('drag-over');});
-  npDropZone.addEventListener('dragleave', ()=>npDropZone.classList.remove('drag-over'));
-  npDropZone.addEventListener('drop', e=>{e.preventDefault();npDropZone.classList.remove('drag-over');npHandleFiles(e.dataTransfer.files);});
+function npCfgRemoveIA(pfx,i)     { const f=npGetIA(pfx);f.splice(i,1);npSaveIA(pfx,f);npCfgRenderIA(pfx); }
+function npCfgAddIA(pfx)          { const f=npGetIA(pfx);f.push({name:'',desc:''});npSaveIA(pfx,f);npCfgRenderIA(pfx); }
+function npCfgRemoveManual(pfx,i) { const f=npGetManual(pfx);f.splice(i,1);npSaveManual(pfx,f);npCfgRenderManual(pfx); }
+function npCfgAddManual(pfx)      { const f=npGetManual(pfx);f.push({name:'',desc:''});npSaveManual(pfx,f);npCfgRenderManual(pfx); }
+
+// Wire drag system to NP config lists
+const _origFieldListGetters = fieldListGetters;
+Object.assign(fieldListGetters, {
+  'np-loc-ia':     [()=>npGetIA('np-loc'),     f=>npSaveIA('np-loc',f),     ()=>npCfgRenderIA('np-loc')],
+  'np-loc-manual': [()=>npGetManual('np-loc'), f=>npSaveManual('np-loc',f), ()=>npCfgRenderManual('np-loc')],
+  'np-int-ia':     [()=>npGetIA('np-int'),     f=>npSaveIA('np-int',f),     ()=>npCfgRenderIA('np-int')],
+  'np-int-manual': [()=>npGetManual('np-int'), f=>npSaveManual('np-int',f), ()=>npCfgRenderManual('np-int')],
+});
+
+// ── Template selection via fbOpen ─────────────────────
+// fbSelectFile extended for tmpl targets
+const _origFbSF2 = fbSelectFile;
+fbSelectFile = async function(item, relativePath) {
+  if (fbTarget && fbTarget.endsWith('-tmpl')) {
+    const pfx = fbTarget.replace('-tmpl','');
+    const tmpl = { path: relativePath, id: item.id, siteId: fbCurrentSiteId, label: item.name };
+    npSaveTmpl(pfx, tmpl);
+    const lbl = document.getElementById(pfx+'-tmpl-label');
+    const hint = document.getElementById(pfx+'-tmpl-hint');
+    if (lbl) lbl.textContent = item.name;
+    if (hint) hint.textContent = 'Guardado. Se descargará de SharePoint al generar la NP.';
+    fbClose();
+  } else {
+    await _origFbSF2(item, relativePath);
+  }
+};
+
+// ── NP manual inputs render ───────────────────────────
+function npRenderManualInputs(pfx) {
+  const fields = npGetManual(pfx);
+  const state = npState[pfx];
+  const el = document.getElementById(pfx + '-manual-inputs');
+  if (!el) return;
+  el.innerHTML = fields.map((f,i) => {
+    const autoNote = f.auto ? ' <span style="font-size:11px;color:var(--text3)">(auto si Excel existente)</span>' : '';
+    return `<div style="margin-bottom:10px">
+      <label>${esc(f.name)}${autoNote}</label>
+      <input type="text" id="${pfx}-manual-${i}" value="${esc(state.manualValues[f.name]||'')}"
+        placeholder="${esc(f.desc||f.name)}"
+        oninput="npState['${pfx}'].manualValues['${f.name.replace(/'/g,"\\'")}'] = this.value" />
+    </div>`;
+  }).join('');
 }
 
-function npHandleFiles(fileList) {
+// ── File handling ─────────────────────────────────────
+['np-loc','np-int'].forEach(pfx => {
+  const dz = document.getElementById(pfx + 'DropZone');
+  if (dz) {
+    dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('drag-over');});
+    dz.addEventListener('dragleave', ()=>dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('drag-over');npHandleFiles(e,pfx);});
+  }
+});
+
+function npHandleFiles(eventOrInput, pfx) {
+  const fileList = eventOrInput.dataTransfer ? eventOrInput.dataTransfer.files : eventOrInput.target.files;
+  const state = npState[pfx];
   Array.from(fileList).forEach(f => {
-    if (!npFiles.find(x=>x.file.name===f.name&&x.file.size===f.size))
-      npFiles.push({file:f, status:'pending', b64:null, result:null});
+    if (!state.files.find(x=>x.file.name===f.name&&x.file.size===f.size))
+      state.files.push({file:f, status:'pending', b64:null, result:null});
   });
-  npRenderFileList();
-  document.getElementById('np-extract-btn').disabled = !npFiles.length || !getApiKey();
-  if (npFiles.length) {
-    document.getElementById('np-num1').className='step-num done';
-    document.getElementById('np-num1').textContent='\u2713';
-    document.getElementById('np-step2').classList.remove('np-step-disabled');
-    document.getElementById('np-num2').className='step-num active';
-    npRenderManualInputs();
+  npRenderFileList(pfx);
+  document.getElementById(pfx+'-extract-btn').disabled = !state.files.length || !getApiKey();
+  if (state.files.length) {
+    document.getElementById(pfx+'-num1').className = 'step-num done';
+    document.getElementById(pfx+'-num1').textContent = '\u2713';
+    document.getElementById(pfx+'-step2').classList.remove('np-step-disabled');
+    document.getElementById(pfx+'-num2').className = 'step-num active';
+    npRenderManualInputs(pfx);
   }
 }
 
-function npRenderFileList() {
-  const el = document.getElementById('np-file-list');
-  if (!npFiles.length) {el.innerHTML='';return;}
+function npRenderFileList(pfx) {
+  const el = document.getElementById(pfx+'-file-list');
+  const state = npState[pfx];
+  if (!state.files.length) { el.innerHTML=''; return; }
   const icons={'application/pdf':'\uD83D\uDCC4','image/png':'\uD83D\uDDBC\uFE0F','image/jpeg':'\uD83D\uDDBC\uFE0F'};
   const labels={pending:'Pendiente',processing:'Procesando...',done:'Listo \u2713',error:'Error'};
   const cls={pending:'badge-pending',processing:'badge-processing',done:'badge-done',error:'badge-error'};
-  el.innerHTML = npFiles.map((f,i) => `
+  el.innerHTML = state.files.map(f => `
     <div class="file-item">
       <div class="file-icon">${icons[f.file.type]||'\uD83D\uDCCE'}</div>
       <div class="file-info"><div class="file-name">${esc(f.file.name)}</div><div class="file-size">${formatSize(f.file.size)}</div></div>
@@ -1320,27 +1469,24 @@ function npRenderFileList() {
     </div>`).join('');
 }
 
-// ── NP Extraction ─────────────────────────────────────
-async function npExtractAll() {
+// ── Extract ───────────────────────────────────────────
+async function npExtractAll(pfx) {
   const apiKey = getApiKey();
-  if (!apiKey) {alert('Configurá la API key en Admin.');return;}
-  if (!npFiles.length) return;
-  const btn = document.getElementById('np-extract-btn');
+  if (!apiKey) { alert('Configurá la API key en Admin.'); return; }
+  const state = npState[pfx];
+  if (!state.files.length) return;
+  const btn = document.getElementById(pfx+'-extract-btn');
   btn.disabled=true; btn.textContent='Procesando...';
-  npExtractedList = [];
-  const npFields = getNpFields().filter(f=>f.name.trim());
-  const fieldDefs = npFields.map(f=>`  "${f.name}": "${f.desc}"`).join(',\n');
-  const prompt = `Analiz\u00e1 esta Proforma Invoice y extra\u00e9 los datos en formato JSON. Devolv\u00e9 SOLO el JSON, sin texto adicional ni backticks.
-{
-${fieldDefs},
-  "items": [{"item": n\u00famero, "cant": cantidad, "descripcion": "descripci\u00f3n completa", "p_unitario": precio, "p_total": precio total}]
-}`;
+  state.extracted = [];
+  const iaFields = npGetIA(pfx).filter(f=>f.name.trim());
+  const fieldDefs = iaFields.map(f=>`  "${f.name}": "${f.desc}"`).join(',\n');
+  const prompt = `Analiz\u00e1 esta Proforma y extra\u00e9 los datos en JSON. Solo JSON, sin backticks ni texto extra.\n{\n${fieldDefs},\n  "items": [{"item": n\u00famero, "cant": cantidad, "descripcion": "descripci\u00f3n", "p_unitario": precio, "p_total": total}]\n}`;
 
-  for (let i=0; i<npFiles.length; i++) {
-    const item = npFiles[i];
+  for (let i=0; i<state.files.length; i++) {
+    const item = state.files[i];
     item.status = 'processing';
-    npRenderFileList();
-    showMsg('np-status-bar','loading',`Analizando ${item.file.name} (${i+1}/${npFiles.length})...`);
+    npRenderFileList(pfx);
+    showMsg(pfx+'-status-bar','loading',`Analizando ${item.file.name} (${i+1}/${state.files.length})...`);
     try {
       if (!item.b64) item.b64 = await fileToBase64(item.file);
       const isPdf = item.file.type==='application/pdf';
@@ -1353,131 +1499,252 @@ ${fieldDefs},
           {type:'text',text:prompt}
         ]}]})
       });
-      if (!res.ok) {const e=await res.json();throw new Error(e.error?.message||'HTTP '+res.status);}
+      if (!res.ok) { const e=await res.json(); throw new Error(e.error?.message||'HTTP '+res.status); }
       const data = await res.json();
       const extracted = JSON.parse(data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
       extracted.__archivo__ = item.file.name;
       item.result = extracted;
       item.status = 'done';
-      npExtractedList.push(extracted);
-    } catch(e) {
-      item.status = 'error';
-      console.error(e);
-    }
-    npRenderFileList();
+      state.extracted.push(extracted);
+    } catch(e) { item.status='error'; console.error(e); }
+    npRenderFileList(pfx);
   }
 
-  if (npExtractedList.length) {
-    showMsg('np-status-bar','success',`\u2713 ${npExtractedList.length} archivo(s) analizados`);
-    npRenderPreviewList();
-    document.getElementById('np-num2').className='step-num done';
-    document.getElementById('np-num2').textContent='\u2713';
-    document.getElementById('np-step3').classList.remove('np-step-disabled');
-    document.getElementById('np-num3').className='step-num active';
-    document.getElementById('np-btn-registro').disabled=false;
-    document.getElementById('np-template-selector').style.display='block';
-    document.getElementById('np-btn-int').disabled=false;
-    document.getElementById('np-btn-loc').disabled=false;
+  if (state.extracted.length) {
+    showMsg(pfx+'-status-bar','success',`\u2713 ${state.extracted.length} archivo(s) analizados`);
+    npRenderPreviewList(pfx);
+    document.getElementById(pfx+'-num2').className='step-num done';
+    document.getElementById(pfx+'-num2').textContent='\u2713';
+    document.getElementById(pfx+'-step3').classList.remove('np-step-disabled');
+    document.getElementById(pfx+'-num3').className='step-num active';
+    document.getElementById(pfx+'-btn-registro').disabled=false;
+    document.getElementById(pfx+'-btn-np').disabled=false;
   } else {
-    showMsg('np-status-bar','error','\u2715 No se pudo analizar ning\u00fan archivo');
+    showMsg(pfx+'-status-bar','error','\u2715 No se pudo analizar ning\u00fan archivo');
   }
   btn.textContent='\u2736 Extraer datos con IA'; btn.disabled=false;
 }
 
-function npRenderPreviewList() {
-  const npFields = getNpFields().filter(f=>f.name.trim()&&f.name!=='items');
-  const area = document.getElementById('np-preview-area');
-  area.innerHTML = npExtractedList.map((d,di) => {
-    const fieldRows = npFields.map(f => `
+function npRenderPreviewList(pfx) {
+  const iaFields = npGetIA(pfx).filter(f=>f.name.trim()&&f.name!=='items');
+  const state = npState[pfx];
+  const area = document.getElementById(pfx+'-preview-area');
+  area.innerHTML = state.extracted.map((d,di) => {
+    const fieldRows = iaFields.map(f => `
       <div class="np-preview-row">
         <span class="k">${esc(f.name)}</span>
         <input style="text-align:right;font-weight:600;font-size:12px;background:transparent;border:none;color:var(--text);font-family:inherit;max-width:60%;outline:none;padding:2px 4px;border-radius:4px"
           value="${esc(d[f.name]!=null?String(d[f.name]):'\u2014')}"
           onfocus="this.style.background='var(--blue-bg)'" onblur="this.style.background='transparent'"
-          oninput="npExtractedList[${di}]['${f.name.replace(/'/g,"\\'").replace(/\\/g,'\\\\')}'] = this.value" />
+          oninput="npState['${pfx}'].extracted[${di}]['${f.name.replace(/'/g,"\\\\'")}'] = this.value" />
       </div>`).join('');
     const itemRows = (d.items||[]).map(it=>`
       <div class="np-item-row">
         <span>${it.item}</span><span>${it.cant}</span>
-        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(it.descripcion)}">${esc(it.descripcion)}</span>
-        <span style="text-align:right">${Number(it.p_unitario).toFixed(2)}</span>
-        <span style="text-align:right">${Number(it.p_total).toFixed(2)}</span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.descripcion||'')}</span>
+        <span style="text-align:right">${Number(it.p_unitario||0).toFixed(2)}</span>
+        <span style="text-align:right">${Number(it.p_total||0).toFixed(2)}</span>
       </div>`).join('');
-    return `
-      <div class="np-preview" style="margin-bottom:12px">
-        <div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600">\uD83D\uDCC4 ${esc(d.__archivo__||'')}</div>
-        ${fieldRows}
-        <div class="np-items-header"><span>#</span><span>Cant</span><span>Descripci\u00f3n</span><span style="text-align:right">P.Unit</span><span style="text-align:right">P.Total</span></div>
-        ${itemRows}
-      </div>`;
+    return `<div class="np-preview" style="margin-bottom:12px">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600">\uD83D\uDCC4 ${esc(d.__archivo__||'')}</div>
+      ${fieldRows}
+      <div class="np-items-header"><span>#</span><span>Cant</span><span>Descripci\u00f3n</span><span style="text-align:right">P.Unit</span><span style="text-align:right">P.Total</span></div>
+      ${itemRows}
+    </div>`;
   }).join('');
 }
 
-// ── NP Modal ──────────────────────────────────────────
-let npSpDefaults = getNpSpDefaults();
+// ── Download NP from SharePoint template ─────────────
+async function npDescargarNP(pfx) {
+  const tmpl = npGetTmpl(pfx);
+  if (!tmpl.id && !tmpl.path) {
+    alert(`Primero configurá la plantilla en Config ${pfx==='np-loc'?'Local':'Internacional'}`);
+    return;
+  }
+  const state = npState[pfx];
+  if (!state.extracted.length) { alert('Primero extraé los datos con IA.'); return; }
 
-function npShowModal() {
-  npSpDefaults = getNpSpDefaults();
-  const mode = npSpDefaults.mode || 'existing';
-  // Reuse same modal structure but for NP
-  // Update labels
-  document.getElementById('sp-folder-label').textContent = npSpDefaults.comprobantesLabel || 'Seleccionar carpeta';
-  document.getElementById('sp-excel-label').textContent = npSpDefaults.excelLabel || 'Sin seleccionar';
-  document.getElementById('sp-newfolder-label').textContent = npSpDefaults.newFolderLabel || 'Sin seleccionar';
-  // Set target to NP
-  document.getElementById('spModal').dataset.target = 'np';
-  spSetMode(mode);
-  document.getElementById('spModal').classList.remove('hidden');
-  // Override confirm button
-  document.getElementById('sp-confirm-btn').onclick = npConfirm;
-  // Buttons target NP sp defaults
-  document.querySelector('#sp-folder-display button').onclick = ()=>fbOpen('folder','np-comprobantes');
-  document.querySelector('#sp-existing-section button').onclick = ()=>fbOpen('file','np-excel');
-  document.querySelector('#sp-new-section button').onclick = ()=>fbOpen('folder','np-newfolder');
+  const btn = document.getElementById(pfx+'-btn-np');
+  btn.disabled=true; btn.textContent='\u23F3 Descargando plantilla...';
+  showMsg(pfx+'-gen-status','loading','Descargando plantilla de SharePoint...');
+
+  try {
+    const token = await getMsToken();
+    const sid = tmpl.siteId || await getSiteId(token);
+    let dlResp;
+    if (tmpl.id) {
+      dlResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${sid}/drive/items/${tmpl.id}/content`,{headers:{Authorization:'Bearer '+token}});
+    } else {
+      const ep = tmpl.path.split('/').map(encodeURIComponent).join('/');
+      dlResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${sid}/drive/root:/${ep}:/content`,{headers:{Authorization:'Bearer '+token}});
+    }
+    if (!dlResp.ok) throw new Error('No se pudo descargar la plantilla: HTTP '+dlResp.status);
+    const ab = await dlResp.arrayBuffer();
+
+    // Fill one file per extracted record
+    const manualFields = npGetManual(pfx);
+    const iaFields = npGetIA(pfx).filter(f=>f.name.trim());
+
+    for (let idx=0; idx<state.extracted.length; idx++) {
+      const d = state.extracted[idx];
+      const wb = XLSX.read(ab, {type:'array', cellStyles:true});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+
+      // Helper to set cell value preserving style
+      const setCell = (addr, val) => {
+        if (!ws[addr]) ws[addr] = {};
+        ws[addr].v = val;
+        ws[addr].t = typeof val === 'number' ? 'n' : 's';
+      };
+
+      const npNumField = manualFields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
+      const impField   = manualFields.find(f=>f.name.toLowerCase().includes('imp'));
+      const obraField  = manualFields.find(f=>f.name.toLowerCase().includes('obra'));
+      const respField  = manualFields.find(f=>f.name.toLowerCase().includes('resp'));
+      const supervField= manualFields.find(f=>f.name.toLowerCase().includes('superv'));
+      const lugarField = manualFields.find(f=>f.name.toLowerCase().includes('lugar'));
+
+      const npNum  = npNumField ? (state.manualValues[npNumField.name]||'') : '';
+      const impNum = impField   ? (state.manualValues[impField.name]||'')   : '';
+      const obra   = obraField  ? (state.manualValues[obraField.name]||'')  : '';
+      const resp   = respField  ? (state.manualValues[respField.name]||'')  : '';
+      const superv = supervField? (state.manualValues[supervField.name]||''): '';
+      const lugar  = lugarField ? (state.manualValues[lugarField.name]||'') : '';
+
+      if (pfx === 'np-loc') {
+        // LOCALES template mapping
+        setCell('F1', npNum ? 'NOTA DE PEDIDO N\u00ba ' + npNum : '');
+        setCell('C3', (d.proveedor||''));
+        setCell('D3', (d.contacto||''));
+        setCell('D4', today());
+        setCell('D5', '1');
+        setCell('D6', (d.moneda||''));
+        // Items (rows 8-20, cols A=item, B=cant, C-D=desc, E=p_unit, F=p_total formula)
+        const items = d.items||[];
+        for (let r=0; r<Math.min(items.length,13); r++) {
+          const row = 8+r;
+          setCell(`A${row}`, Number(items[r].item)||r+1);
+          setCell(`B${row}`, Number(items[r].cant)||1);
+          setCell(`C${row}`, items[r].descripcion||'');
+          setCell(`E${row}`, Number(items[r].p_unitario)||0);
+          // F col has formula - update to use values
+          ws[`F${row}`] = {v: Number(items[r].p_total)||0, t:'n'};
+        }
+        // Totals
+        const subtotal = items.reduce((s,i)=>s+Number(i.p_total||0),0);
+        setCell('F21', subtotal);
+        setCell('F23', subtotal); // subtotal after bonif
+        setCell('F25', subtotal); // total
+        // Footer
+        setCell('A33', (d.plazo_pago||''));
+        setCell('A35', (d.plazo_entrega||''));
+        if (lugar) setCell('A37', lugar);
+        if (obra)  { setCell('C38','Obra: '); setCell('C39', obra); }
+        if (resp)  { setCell('E38','Generada por: '); setCell('E39', resp); }
+        if (superv){ setCell('F39', superv); }
+        if (d.observaciones) setCell('A38', d.observaciones);
+      } else {
+        // INTERNACIONALES template mapping
+        setCell('D1', 'NOTA DE PEDIDO N\u00ba ' + npNum);
+        setCell('D2', 'IMP ' + impNum);
+        setCell('C3', (d.proveedor||''));
+        setCell('D4', (d.atencion||''));
+        setCell('D5', today());
+        setCell('D6', (d.moneda||''));
+        // Items rows 10-18
+        const items = d.items||[];
+        for (let r=0; r<Math.min(items.length,9); r++) {
+          const row = 10+r;
+          setCell(`A${row}`, Number(items[r].item)||r+1);
+          setCell(`B${row}`, Number(items[r].cant)||1);
+          setCell(`C${row}`, items[r].descripcion||'');
+          setCell(`D${row}`, Number(items[r].p_unitario)||0);
+          ws[`E${row}`] = {v: Number(items[r].p_total)||0, t:'n'};
+        }
+        const subtotal = items.reduce((s,i)=>s+Number(i.p_total||0),0);
+        ws['E19'] = {v:subtotal,t:'n'};
+        ws['E20'] = {v:subtotal,t:'n'};
+        setCell('C16', 'Ref. Quotation No: '+(d.ref_no||''));
+        setCell('B24', (d.plazo_pago||''));
+        setCell('B26', (d.plazo_entrega||''));
+        setCell('B28', (d.incoterm||''));
+        if (d.observaciones) setCell('B30', d.observaciones);
+        if (resp) setCell('D34', resp);
+      }
+
+      const wbOut = XLSX.write(wb, {type:'array', bookType:'xlsx'});
+      const blob = new Blob([wbOut], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `NP_${npNum||idx+1}_${(d.proveedor||'').split(' ')[0]}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    showMsg(pfx+'-gen-status','success',`\u2713 ${state.extracted.length} NP(s) descargadas con la plantilla de SharePoint`);
+  } catch(e) {
+    showMsg(pfx+'-gen-status','error','\u2715 Error: '+e.message);
+  } finally {
+    btn.disabled=false; btn.textContent='\uD83D\uDCC4 Descargar NP (desde plantilla SharePoint)';
+  }
 }
 
-// Extend fbSelectCurrent and fbSelectFile for NP targets
-const _origFbSelectCurrent = fbSelectCurrent;
+// ── Save to SharePoint (registro) ────────────────────
+let npCurrentModal = null;
+
+function npShowModal(pfx) {
+  npCurrentModal = pfx;
+  const spD = npGetSp(pfx);
+  document.getElementById('sp-folder-label').textContent = spD.comprobantesLabel || 'Sin seleccionar';
+  document.getElementById('sp-excel-label').textContent  = spD.excelLabel  || 'Sin seleccionar';
+  document.getElementById('sp-newfolder-label').textContent = spD.newFolderLabel || 'Sin seleccionar';
+  document.getElementById('spModal').dataset.target = pfx;
+  spSetMode(spD.mode||'existing');
+  document.getElementById('spModal').classList.remove('hidden');
+  document.getElementById('sp-confirm-btn').onclick = ()=>npConfirmSave(pfx);
+  document.querySelector('#sp-folder-display button').onclick  = ()=>fbOpen('folder', pfx+'-comprobantes');
+  document.querySelector('#sp-existing-section button').onclick = ()=>fbOpen('file',   pfx+'-excel');
+  document.querySelector('#sp-new-section button').onclick     = ()=>fbOpen('folder', pfx+'-newfolder');
+}
+
+// Extend fbSelectCurrent/File for NP prefixes
+const _origFbSC2 = fbSelectCurrent;
 fbSelectCurrent = function() {
+  const pfx = npCurrentModal;
+  if (!pfx || !fbTarget.startsWith(pfx)) { _origFbSC2(); return; }
   const btn = document.getElementById('fb-select-btn');
   const path = btn.dataset.path;
   const itemId = btn.dataset.id;
-  const siteName = fbCurrentSiteName||'';
-  const label = siteName + (path ? ' \u203a ' + path.replace(/\//g,' \u203a ') : '');
-  if (fbTarget==='np-comprobantes') {
-    npSpDefaults.comprobantesFolder=path; npSpDefaults.comprobantesLabel=label;
-    npSpDefaults.comprobantesId=itemId; npSpDefaults.comprobantesS=fbCurrentSiteId;
+  const label = (fbCurrentSiteName||'') + (path ? ' \u203a ' + path.replace(/\//g,' \u203a ') : '');
+  const spD = npGetSp(pfx);
+  if (fbTarget===pfx+'-comprobantes') {
+    spD.comprobantesFolder=path; spD.comprobantesLabel=label; spD.comprobantesId=itemId; spD.comprobantesS=fbCurrentSiteId;
     document.getElementById('sp-folder-label').textContent=label;
-    saveNpSpDefaults(npSpDefaults);
-  } else if (fbTarget==='np-newfolder') {
-    npSpDefaults.newFolder=path; npSpDefaults.newFolderLabel=label;
-    npSpDefaults.newFolderId=itemId; npSpDefaults.newFolderS=fbCurrentSiteId;
+  } else if (fbTarget===pfx+'-newfolder') {
+    spD.newFolder=path; spD.newFolderLabel=label; spD.newFolderId=itemId; spD.newFolderS=fbCurrentSiteId;
     document.getElementById('sp-newfolder-label').textContent=label;
-    saveNpSpDefaults(npSpDefaults);
-  } else {
-    _origFbSelectCurrent();
   }
+  npSaveSp(pfx,spD);
   fbClose();
 };
 
-const _origFbSelectFile = fbSelectFile;
+const _origFbSF3 = fbSelectFile;
 fbSelectFile = async function(item, relativePath) {
-  if (fbTarget==='np-excel') {
-    npSpDefaults.excelPath=relativePath; npSpDefaults.excelId=item.id;
-    npSpDefaults.excelS=fbCurrentSiteId; npSpDefaults.excelLabel=item.name;
+  const pfx = npCurrentModal;
+  if (pfx && fbTarget===pfx+'-excel') {
+    const spD = npGetSp(pfx);
+    spD.excelPath=relativePath; spD.excelId=item.id; spD.excelS=fbCurrentSiteId; spD.excelLabel=item.name;
     document.getElementById('sp-excel-label').textContent=item.name;
-    saveNpSpDefaults(npSpDefaults);
-    // Load NP number from this excel
+    npSaveSp(pfx,spD);
     fbClose();
-    await npCargarUltimoNPFromExcel(item.id, fbCurrentSiteId);
-    // Load headers and show mapping modal for NP
-    await loadExcelHeadersAndShowMapping('np', item.id, fbCurrentSiteId);
+    await npCargarUltimoNP(pfx, item.id, fbCurrentSiteId);
+    await loadExcelHeadersAndShowMapping(pfx, item.id, fbCurrentSiteId);
   } else {
-    _origFbSelectFile(item, relativePath);
+    await _origFbSF3(item, relativePath);
   }
 };
 
-async function npCargarUltimoNPFromExcel(itemId, siteId) {
+async function npCargarUltimoNP(pfx, itemId, siteId) {
   try {
     const token = await getMsToken();
     const sid = siteId || await getSiteId(token);
@@ -1486,538 +1753,144 @@ async function npCargarUltimoNPFromExcel(itemId, siteId) {
     const ab = await resp.arrayBuffer();
     const wb = XLSX.read(ab,{type:'array'});
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
-    let ultimo = 0;
+    let ultimo=0;
     for (let i=1;i<rows.length;i++){const v=rows[i][3];if(v&&!isNaN(parseInt(v)))ultimo=Math.max(ultimo,parseInt(v));}
-    // Set NP num in manual fields
-    const fields = getNpManualFields();
-    const npField = fields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
+    const manualFields = npGetManual(pfx);
+    const npField = manualFields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
     if (npField) {
-      npManualValues[npField.name] = String(ultimo+1);
-      npRenderManualInputs();
+      npState[pfx].manualValues[npField.name] = String(ultimo+1);
+      npRenderManualInputs(pfx);
     }
   } catch(e) { console.log('No se pudo cargar NP:',e.message); }
 }
 
-async function npConfirm() {
+async function npConfirmSave(pfx) {
+  const spD = npGetSp(pfx);
+  spD.mode = spMode;
+  npSaveSp(pfx, spD);
   const btn = document.getElementById('sp-confirm-btn');
-  npSpDefaults.mode = spMode;
-  saveNpSpDefaults(npSpDefaults);
+  if (spMode==='local') { spModalClose(); return; }
+  if (spMode==='existing'&&!spD.excelId&&!spD.excelPath){alert('Seleccion\u00e1 un Excel destino.');return;}
+  if (spMode==='new'&&!spD.newFolderId&&!spD.newFolder){alert('Seleccion\u00e1 una carpeta destino.');return;}
 
-  if (spMode==='local') { npGenerateAllNP(); spModalClose(); return; }
-  if (spMode==='existing' && !npSpDefaults.excelId && !npSpDefaults.excelPath) {alert('Seleccion\u00e1 un archivo Excel destino.');return;}
-  if (spMode==='new' && !npSpDefaults.newFolderId && !npSpDefaults.newFolder) {alert('Seleccion\u00e1 una carpeta destino.');return;}
-
-  btn.disabled=true;
-  const original = btn.textContent;
-  btn.textContent='\u23F3 Conectando...';
+  btn.disabled=true; const orig=btn.textContent; btn.textContent='\u23F3 Conectando...';
+  const state = npState[pfx];
   try {
     const token = await getMsToken();
     const siteId = await getSiteId(token);
-    const manualFields = getNpManualFields();
+    const manualFields = npGetManual(pfx);
+    const iaFields = npGetIA(pfx).filter(f=>f.name.trim());
 
     // Upload comprobantes
-    const compSite = npSpDefaults.comprobantesS || siteId;
-    for (const item of npFiles.filter(f=>f.status==='done')) {
-      btn.textContent = `\u23F3 Subiendo ${item.file.name}...`;
-      if (!item.b64) item.b64 = await fileToBase64(item.file);
-      let uploadUrl;
-      if (npSpDefaults.comprobantesId) {
-        uploadUrl=`https://graph.microsoft.com/v1.0/sites/${compSite}/drive/items/${npSpDefaults.comprobantesId}:/${encodeURIComponent(item.file.name)}:/content`;
-      } else if (npSpDefaults.comprobantesFolder) {
-        const ep=npSpDefaults.comprobantesFolder.split('/').map(encodeURIComponent).join('/');
-        uploadUrl=`https://graph.microsoft.com/v1.0/sites/${compSite}/drive/root:/${ep}/${encodeURIComponent(item.file.name)}:/content`;
-      } else {
-        const ep=NP_FOLDER.split('/').map(encodeURIComponent).join('/');
-        uploadUrl=`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${ep}/${encodeURIComponent(item.file.name)}:/content`;
-      }
-      await fetch(uploadUrl,{method:'PUT',headers:{Authorization:'Bearer '+token},body:Uint8Array.from(atob(item.b64),c=>c.charCodeAt(0))});
+    const compSite = spD.comprobantesS||siteId;
+    for (const item of state.files.filter(f=>f.status==='done')) {
+      btn.textContent=`\u23F3 Subiendo ${item.file.name}...`;
+      if (!item.b64) item.b64=await fileToBase64(item.file);
+      let upUrl;
+      if (spD.comprobantesId) upUrl=`https://graph.microsoft.com/v1.0/sites/${compSite}/drive/items/${spD.comprobantesId}:/${encodeURIComponent(item.file.name)}:/content`;
+      else if (spD.comprobantesFolder) { const ep=spD.comprobantesFolder.split('/').map(encodeURIComponent).join('/'); upUrl=`https://graph.microsoft.com/v1.0/sites/${compSite}/drive/root:/${ep}/${encodeURIComponent(item.file.name)}:/content`; }
+      if (upUrl) await fetch(upUrl,{method:'PUT',headers:{Authorization:'Bearer '+token},body:Uint8Array.from(atob(item.b64),c=>c.charCodeAt(0))});
     }
 
     if (spMode==='existing') {
       btn.textContent='\u23F3 Actualizando Excel...';
-      const excelSite = npSpDefaults.excelS || siteId;
+      const exSite=spD.excelS||siteId;
       let dlResp;
-      if (npSpDefaults.excelId) {
-        dlResp=await fetch(`https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/items/${npSpDefaults.excelId}/content`,{headers:{Authorization:'Bearer '+token}});
-      } else {
-        const ep=npSpDefaults.excelPath.split('/').map(encodeURIComponent).join('/');
-        dlResp=await fetch(`https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/root:/${ep}:/content`,{headers:{Authorization:'Bearer '+token}});
-      }
+      if (spD.excelId) dlResp=await fetch(`https://graph.microsoft.com/v1.0/sites/${exSite}/drive/items/${spD.excelId}/content`,{headers:{Authorization:'Bearer '+token}});
+      else { const ep=spD.excelPath.split('/').map(encodeURIComponent).join('/'); dlResp=await fetch(`https://graph.microsoft.com/v1.0/sites/${exSite}/drive/root:/${ep}:/content`,{headers:{Authorization:'Bearer '+token}}); }
       if (!dlResp.ok) throw new Error('No se pudo leer el Excel');
-      const ab = await dlResp.arrayBuffer();
-      const wb = XLSX.read(ab,{type:'array'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws,{header:1});
+      const ab=await dlResp.arrayBuffer();
+      const wb=XLSX.read(ab,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+      const npHeaders=rows[0]||[];
+      const savedMap=getMapping(NP_KEYS[pfx].map);
+      const useMap=Object.keys(savedMap).length>0&&npHeaders.length>0;
 
-      // Insert one row per extracted file
-      const npHeaders = rows[0] || [];
-      const npSavedMapping = getMapping(NP_MAPPING_KEY);
-      const npUseMapping = Object.keys(npSavedMapping).length > 0 && npHeaders.length > 0;
-      const npIaFields = getNpFields().filter(f=>f.name.trim());
-      for (const d of npExtractedList) {
+      for (const d of state.extracted) {
         let newRow;
-        if (npUseMapping) {
-          newRow = buildRowFromMapping(npSavedMapping, npHeaders, d, npManualValues, manualFields, npIaFields);
+        if (useMap) {
+          newRow=buildRowFromMapping(savedMap, npHeaders, d, state.manualValues, manualFields, iaFields);
         } else {
-          // Fallback: use column similarity matching
-          newRow = new Array(Math.max(npHeaders.length, 20)).fill('');
-          npHeaders.forEach((h, i) => {
-            if (!h) return;
-            const mf = manualFields.find(f=>strSimilarity(f.name,String(h))>0.5);
-            if (mf) { newRow[i] = npManualValues[mf.name] || ''; return; }
-            const ia = npIaFields.find(f=>strSimilarity(f.name,String(h))>0.5);
-            if (ia) newRow[i] = d[ia.name] != null ? d[ia.name] : '';
-            if (String(h).toLowerCase().includes('fecha') && !String(h).toLowerCase().includes('entrega')) newRow[i] = today();
+          newRow=new Array(Math.max(npHeaders.length,20)).fill('');
+          npHeaders.forEach((h,i)=>{
+            if(!h)return;
+            const mf=manualFields.find(f=>strSimilarity(f.name,String(h))>0.5);
+            if(mf){newRow[i]=state.manualValues[mf.name]||'';return;}
+            const ia=iaFields.find(f=>strSimilarity(f.name,String(h))>0.5);
+            if(ia)newRow[i]=d[ia.name]!=null?d[ia.name]:'';
+            if(String(h).toLowerCase().includes('fecha')&&!String(h).toLowerCase().includes('entrega'))newRow[i]=today();
           });
         }
         rows.push(newRow);
       }
 
-      const newWs = XLSX.utils.aoa_to_sheet(rows);
+      const newWs=XLSX.utils.aoa_to_sheet(rows);
       wb.Sheets[wb.SheetNames[0]]=newWs;
-      const wbOut = XLSX.write(wb,{type:'array',bookType:'xlsx'});
+      const wbOut=XLSX.write(wb,{type:'array',bookType:'xlsx'});
       let ulUrl;
-      if (npSpDefaults.excelId) {
-        ulUrl=`https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/items/${npSpDefaults.excelId}/content`;
-      } else {
-        const ep=npSpDefaults.excelPath.split('/').map(encodeURIComponent).join('/');
-        ulUrl=`https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/root:/${ep}:/content`;
-      }
+      if(spD.excelId) ulUrl=`https://graph.microsoft.com/v1.0/sites/${exSite}/drive/items/${spD.excelId}/content`;
+      else { const ep=spD.excelPath.split('/').map(encodeURIComponent).join('/'); ulUrl=`https://graph.microsoft.com/v1.0/sites/${exSite}/drive/root:/${ep}:/content`; }
       await fetch(ulUrl,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:new Uint8Array(wbOut)});
 
     } else if (spMode==='new') {
       btn.textContent='\u23F3 Creando Excel...';
-      const npFields = getNpFields().filter(f=>f.name.trim());
-      const manualNames = manualFields.map(f=>f.name);
-      const headers = [...manualNames, ...npFields.map(f=>f.name), 'Archivo'];
-      const rows2 = npExtractedList.map(d => [
-        ...manualFields.map(f=>npManualValues[f.name]||''),
-        ...npFields.map(f=>d[f.name]!=null?d[f.name]:''),
-        d.__archivo__||''
-      ]);
+      const manNames=manualFields.map(f=>f.name);
+      const headers=[...manNames,...iaFields.map(f=>f.name),'Archivo'];
+      const rows2=state.extracted.map(d=>[...manualFields.map(f=>state.manualValues[f.name]||''),...iaFields.map(f=>d[f.name]!=null?d[f.name]:''),d.__archivo__||'']);
       const wb2=XLSX.utils.book_new();
       const ws2=XLSX.utils.aoa_to_sheet([headers,...rows2]);
       ws2['!cols']=headers.map((_,i)=>({wch:Math.min(Math.max(headers[i].length,...rows2.map(r=>String(r[i]||'').length))+2,40)}));
       XLSX.utils.book_append_sheet(wb2,ws2,'Notas NP');
       const wbOut2=XLSX.write(wb2,{type:'array',bookType:'xlsx'});
       const fileName=`notas_np_${new Date().toISOString().slice(0,10)}.xlsx`;
-      const newSite=npSpDefaults.newFolderS||siteId;
+      const newSite=spD.newFolderS||siteId;
       let newUrl;
-      if (npSpDefaults.newFolderId) {
-        newUrl=`https://graph.microsoft.com/v1.0/sites/${newSite}/drive/items/${npSpDefaults.newFolderId}:/${encodeURIComponent(fileName)}:/content`;
-      } else {
-        const ef=(npSpDefaults.newFolder||NP_FOLDER).split('/').map(encodeURIComponent).join('/');
-        newUrl=`https://graph.microsoft.com/v1.0/sites/${newSite}/drive/root:/${ef}/${encodeURIComponent(fileName)}:/content`;
-      }
+      if(spD.newFolderId) newUrl=`https://graph.microsoft.com/v1.0/sites/${newSite}/drive/items/${spD.newFolderId}:/${encodeURIComponent(fileName)}:/content`;
+      else { const ef=(spD.newFolder||NP_FOLDER).split('/').map(encodeURIComponent).join('/'); newUrl=`https://graph.microsoft.com/v1.0/sites/${newSite}/drive/root:/${ef}/${encodeURIComponent(fileName)}:/content`; }
       await fetch(newUrl,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:new Uint8Array(wbOut2)});
     }
 
     spModalClose();
-    showMsg('np-gen-status','success','\u2713 Guardado en SharePoint correctamente');
+    showMsg(pfx+'-gen-status','success','\u2713 Guardado en SharePoint correctamente');
   } catch(e) {
-    showMsg('np-gen-status','error','\u2715 Error: '+e.message);
+    showMsg(pfx+'-gen-status','error','\u2715 Error: '+e.message);
   } finally {
-    btn.textContent=original; btn.disabled=false;
+    btn.textContent=orig; btn.disabled=false;
     document.getElementById('sp-confirm-btn').onclick=spConfirm;
   }
 }
 
-async function npCargarUltimoNP() {
-  // Legacy - now handled via modal excel selection
+// ── Clear ─────────────────────────────────────────────
+function npClearAll(pfx) {
+  if (!confirm('\u00bfBorrar todos los archivos y resultados?')) return;
+  const state = npState[pfx];
+  state.files=[]; state.extracted=[]; state.manualValues={};
+  ['file-list','manual-inputs','status-bar','preview-area','gen-status'].forEach(id=>{
+    const el=document.getElementById(pfx+'-'+id);
+    if(el)el.innerHTML='';
+  });
+  [pfx+'-num1',pfx+'-num2',pfx+'-num3'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(el){el.className='step-num'+(i===0?' active':'');el.textContent=String(i+1);}
+  });
+  [pfx+'-step2',pfx+'-step3'].forEach(id=>document.getElementById(id)?.classList.add('np-step-disabled'));
+  [pfx+'-extract-btn',pfx+'-btn-registro',pfx+'-btn-np'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});
+  const fi=document.getElementById(pfx+'-file-input');if(fi)fi.value='';
 }
 
-function npGenerateAllNP(templateType) {
-  if (!npExtractedList.length) return;
-  const manualFields = getNpManualFields();
-  const npNumField = manualFields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
-  const impField   = manualFields.find(f=>f.name.toLowerCase().includes('imp'));
-  const obraField  = manualFields.find(f=>f.name.toLowerCase().includes('obra'));
-  const respField  = manualFields.find(f=>f.name.toLowerCase().includes('resp'));
-  const equipField = manualFields.find(f=>f.name.toLowerCase().includes('equip'));
-
-  const htmlPages = npExtractedList.map((d, idx) => {
-    const npNum  = npNumField ? (npManualValues[npNumField.name]||'') : '';
-    const impNum = impField   ? (npManualValues[impField.name]||'')   : '';
-    const obra   = obraField  ? (npManualValues[obraField.name]||'')  : '';
-    const resp   = respField  ? (npManualValues[respField.name]||'')  : '';
-    const equip  = equipField ? (npManualValues[equipField.name]||'') : '';
-    const fmt = n => { const num = Number(n); return isNaN(num) ? '' : num.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
-    const subtotal = (d.items||[]).reduce((s,i)=>s+Number(i.p_total||0),0);
-
-    if (templateType === 'local') {
-      return npBuildLocal(d, npNum, impNum, obra, resp, equip, fmt, subtotal);
-    } else {
-      return npBuildInternacional(d, npNum, impNum, obra, resp, equip, fmt, subtotal);
-    }
-  }).join('<div style="page-break-after:always"></div>');
-
-  const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html>
-<html><head><meta charset="UTF-8">
-<title>Notas de Pedido — DAIA</title>
-<style>
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family: Arial, sans-serif; font-size: 11px; color: #000; background:#fff; }
-  .np-page { width:210mm; min-height:297mm; padding:15mm 15mm 10mm; margin:0 auto; }
-  table { width:100%; border-collapse:collapse; }
-  td, th { padding:3px 5px; }
-  .header-table td { vertical-align:top; }
-  .bold { font-weight:bold; }
-  .right { text-align:right; }
-  .center { text-align:center; }
-  .items-header th { background:#1a1a18; color:#fff; font-weight:bold; padding:5px; }
-  .items-row td { border-bottom:1px solid #ddd; padding:4px 5px; }
-  .subtotal-row td { font-weight:bold; border-top:2px solid #000; }
-  .total-row td { font-weight:bold; font-size:13px; }
-  .footer-section { margin-top:20px; font-size:10px; }
-  .logo-area { font-size:20px; font-weight:bold; color:#1a1a18; letter-spacing:2px; }
-  .np-number { font-size:16px; font-weight:bold; text-align:right; }
-  .section-label { font-weight:bold; margin-top:12px; margin-bottom:4px; border-bottom:1px solid #ccc; padding-bottom:2px; }
-  @media print {
-    body { margin:0; }
-    .np-page { margin:0; padding:10mm; width:100%; }
-    @page { size:A4; margin:0; }
-  }
-</style>
-</head><body>${htmlPages}</body></html>`);
-  win.document.close();
-  setTimeout(() => win.print(), 500);
-  showMsg('np-gen-status','success','\u2713 Abrí la ventana de impresión — guardá como PDF');
-}
-
-function npBuildInternacional(d, npNum, impNum, obra, resp, equip, fmt, subtotal) {
-  const items = d.items||[];
-  const itemRows = items.map(it => `
-    <tr class="items-row">
-      <td class="center">${esc(String(it.item||''))}</td>
-      <td class="center">${esc(String(it.cant||''))}</td>
-      <td>${esc(it.descripcion||'')}</td>
-      <td class="right">${fmt(it.p_unitario)}</td>
-      <td class="right">${fmt(it.p_total)}</td>
-    </tr>`).join('');
-
-  return `
-  <div class="np-page">
-    <table class="header-table" style="margin-bottom:10px">
-      <tr>
-        <td width="5%"></td>
-        <td width="5%"></td>
-        <td width="40%">
-          <div class="logo-area">AERATION</div>
-          <div style="font-size:9px;color:#666">ARGENTINA S.A.</div>
-        </td>
-        <td width="50%">
-          <div class="np-number">NOTA DE PEDIDO N\u00ba ${esc(String(npNum))}</div>
-          <div class="right bold" style="font-size:12px">IMP ${esc(String(impNum))}</div>
-        </td>
-      </tr>
-      <tr><td colspan="4" style="padding:6px 0"><hr style="border-color:#1a1a18"></td></tr>
-      <tr>
-        <td></td><td></td>
-        <td>
-          <span class="bold">PROVEEDOR:</span><br>
-          ${esc(d.proveedor||'')}
-          ${d.atencion ? '<br>Atenci\u00f3n: '+esc(d.atencion) : ''}
-          ${d.telefono ? '<br>Tel: '+esc(d.telefono) : ''}
-          ${d.email    ? '<br>'+esc(d.email) : ''}
-        </td>
-        <td>
-          <table style="width:100%">
-            <tr><td class="bold">FECHA:</td><td class="right">${today()}</td></tr>
-            <tr><td class="bold">MONEDA:</td><td class="right">${esc(d.moneda||'')}</td></tr>
-            <tr><td class="bold">REF:</td><td class="right">${esc(d.ref_no||'')}</td></tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-
-    <table style="margin-bottom:0">
-      <thead><tr class="items-header">
-        <th class="center" width="6%">ITEM</th>
-        <th class="center" width="8%">CANT.</th>
-        <th width="55%">DESCRIPCI\u00d3N</th>
-        <th class="right" width="15%">P.UNITARIO</th>
-        <th class="right" width="16%">P.TOTAL</th>
-      </tr></thead>
-      <tbody>${itemRows}</tbody>
-      <tfoot>
-        <tr class="subtotal-row"><td colspan="4" class="right">SUB-TOTAL</td><td class="right">${esc(d.moneda||'')} ${fmt(subtotal)}</td></tr>
-        <tr class="total-row"><td colspan="4" class="right">TOTAL</td><td class="right">${esc(d.moneda||'')} ${fmt(subtotal)}</td></tr>
-      </tfoot>
-    </table>
-
-    <div class="footer-section">
-      <div class="section-label">Payment terms</div>
-      <div>${esc(d.plazo_pago||'')}</div>
-      <div class="section-label">Plazo de Entrega</div>
-      <div>${esc(d.plazo_entrega||'')}</div>
-      <div class="section-label">Incoterm</div>
-      <div>${esc(d.incoterm||'')}</div>
-      ${d.observaciones ? '<div class="section-label">Observaciones</div><div>'+esc(d.observaciones)+'</div>' : ''}
-      ${resp ? '<div style="margin-top:20px;text-align:right"><strong>'+esc(resp)+'</strong><br>Generado por DAIA</div>' : ''}
-    </div>
-  </div>`;
-}
-
-function npBuildLocal(d, npNum, impNum, obra, resp, equip, fmt, subtotal) {
-  const items = d.items||[];
-  const itemRows = items.map(it => `
-    <tr class="items-row">
-      <td class="center">${esc(String(it.item||''))}</td>
-      <td class="center">${esc(String(it.cant||''))}</td>
-      <td colspan="2">${esc(it.descripcion||'')}</td>
-      <td class="right">${fmt(it.p_unitario)}</td>
-      <td class="right">${fmt(it.p_total)}</td>
-    </tr>`).join('');
-
-  const iva = 0;
-  const total = subtotal + iva;
-
-  return `
-  <div class="np-page">
-    <table class="header-table" style="margin-bottom:10px">
-      <tr>
-        <td width="5%"></td>
-        <td width="5%"></td>
-        <td width="35%">
-          <div class="logo-area">AERATION</div>
-          <div style="font-size:9px;color:#666">ARGENTINA S.A.</div>
-        </td>
-        <td width="55%">
-          <div class="np-number">NOTA DE PEDIDO N\u00ba ${esc(String(npNum))}</div>
-          <div class="right bold">IMP ${esc(String(impNum))}</div>
-        </td>
-      </tr>
-      <tr><td colspan="4" style="padding:6px 0"><hr style="border-color:#1a1a18"></td></tr>
-      <tr>
-        <td></td><td></td>
-        <td>
-          <span class="bold">PROVEEDOR:</span><br>
-          ${esc(d.proveedor||'')}
-          ${d.atencion ? '<br>Contacto: '+esc(d.atencion) : ''}
-          ${d.telefono ? '<br>Tel: '+esc(d.telefono) : ''}
-          ${d.email    ? '<br>'+esc(d.email) : ''}
-          ${d.ref_no   ? '<br>Ref: '+esc(d.ref_no) : ''}
-        </td>
-        <td>
-          <table style="width:100%">
-            <tr><td class="bold">FECHA:</td><td class="right">${today()}</td></tr>
-            <tr><td class="bold">MONEDA:</td><td class="right">${esc(d.moneda||'')}</td></tr>
-            <tr><td class="bold">P\u00c1GINAS:</td><td class="right">1</td></tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-
-    <table style="margin-bottom:0">
-      <thead><tr class="items-header">
-        <th class="center" width="6%">\u00cdTEM</th>
-        <th class="center" width="8%">CANT.</th>
-        <th colspan="2" width="54%">DESCRIPCI\u00d3N</th>
-        <th class="right" width="16%">P.UNITARIO</th>
-        <th class="right" width="16%">P.TOTAL</th>
-      </tr></thead>
-      <tbody>${itemRows}</tbody>
-      <tfoot>
-        <tr class="subtotal-row"><td colspan="5" class="right">SUB-TOTAL</td><td class="right">${fmt(subtotal)}</td></tr>
-        <tr><td colspan="5" class="right">Bonificaci\u00f3n</td><td class="right">-</td></tr>
-        <tr><td colspan="5" class="right">IVA</td><td class="right">${fmt(iva)}</td></tr>
-        <tr class="total-row"><td colspan="5" class="right">TOTAL ${esc(d.moneda||'')}</td><td class="right">${fmt(total)}</td></tr>
-      </tfoot>
-    </table>
-
-    <div class="footer-section">
-      <p style="margin-top:10px;font-size:9px;color:#555">Favor emitir la Factura según la condición de pago estipulado en la Nota de Pedido, con el fin de poder emitir la Orden de Pago.</p>
-      <p style="font-size:9px;color:#555">Favor remitir la Factura a Federico Alais - falais@aeration.com.ar con copia a compras@aeration.com.ar</p>
-      <div class="section-label">Forma de Pago</div>
-      <div>${esc(d.plazo_pago||'')}</div>
-      <div class="section-label">Plazo de Entrega</div>
-      <div>${esc(d.plazo_entrega||'')}</div>
-      ${equip ? '<div class="section-label">Equipos/Servicios</div><div>'+esc(equip)+'</div>' : ''}
-      ${obra  ? '<div class="section-label">Obra</div><div>'+esc(obra)+'</div>' : ''}
-      ${d.observaciones ? '<div class="section-label">Observaciones</div><div>'+esc(d.observaciones)+'</div>' : ''}
-      <div style="margin-top:16px;display:flex;justify-content:space-between">
-        ${obra ? '<div>Obra: '+esc(obra)+'</div>' : '<div></div>'}
-        ${resp ? '<div>Generada por: '+esc(resp)+'<br>Supervisada por: ____</div>' : ''}
-      </div>
-    </div>
-  </div>`;
-}
-
-// Dummy stubs for old functions
+// ── Legacy stubs ──────────────────────────────────────
 function npHandlePDF(){}
 function npExtractData(){}
 function npRenderPreview(){}
 function npInsertarFila(){}
 function npGenerateNP(){}
-
-// ── Column Mapping ────────────────────────────────────
-const REND_MAPPING_KEY = 'rend_col_mapping';
-const NP_MAPPING_KEY   = 'np_col_mapping';
-
-let mapContext = null; // {target:'rend'|'np', headers:[], fields:[], pendingAction:fn}
-
-function getMapping(key) { return JSON.parse(localStorage.getItem(key)||'null') || {}; }
-function saveMapping(key, m) { localStorage.setItem(key, JSON.stringify(m)); }
-
-// Similarity score between two strings (0-1)
-function strSimilarity(a, b) {
-  a = a.toLowerCase().trim();
-  b = b.toLowerCase().trim();
-  if (a === b) return 1;
-  if (a.includes(b) || b.includes(a)) return 0.8;
-  // Check word overlap
-  const wa = new Set(a.split(/[\s/_\-,./]+/));
-  const wb = new Set(b.split(/[\s/_\-,./]+/));
-  let overlap = 0;
-  wa.forEach(w => { if (w.length > 2 && wb.has(w)) overlap++; });
-  if (overlap > 0) return 0.6 + (overlap * 0.1);
-  // Check if any word is contained
-  for (const w of wa) { if (w.length > 3 && b.includes(w)) return 0.5; }
-  for (const w of wb) { if (w.length > 3 && a.includes(w)) return 0.5; }
-  return 0;
-}
-
-// Auto-suggest mapping: for each Excel header, find best matching field
-function autoSuggestMapping(excelHeaders, availableFields) {
-  const mapping = {}; // colIndex -> fieldName
-  const usedFields = new Set();
-  
-  excelHeaders.forEach((header, colIdx) => {
-    if (!header) return;
-    let bestField = '__none__';
-    let bestScore = 0.3; // minimum threshold
-    
-    // Special cases
-    const h = String(header).toLowerCase();
-    if (h.includes('archivo') || h.includes('file')) { mapping[colIdx] = '__archivo__'; return; }
-    if (h.includes('fecha anal') || h.includes('analysis')) { mapping[colIdx] = '__fecha_analisis__'; return; }
-    if (h.includes('fecha') && (h.includes('hoy') || h.includes('today') || h.includes('solicitud') || h.includes('np'))) {
-      mapping[colIdx] = '__fecha_hoy__'; return;
-    }
-    
-    availableFields.forEach(field => {
-      if (usedFields.has(field)) return;
-      const score = strSimilarity(String(header), field);
-      if (score > bestScore) { bestScore = score; bestField = field; }
-    });
-    
-    if (bestField !== '__none__') { mapping[colIdx] = bestField; usedFields.add(bestField); }
-    else mapping[colIdx] = '__none__';
-  });
-  
-  return mapping;
-}
-
-function mapModalClose() {
-  document.getElementById('mapModal').classList.add('hidden');
-}
-
-function showMappingModal(target, excelHeaders, savedMapping, pendingAction) {
-  // Build available fields list
-  let availableFields = [];
-  if (target === 'rend') {
-    const iaFields = getRendFields().filter(f=>f.name.trim()).map(f=>f.name);
-    const manualFields = getRendManualFields().filter(f=>f.name.trim()).map(f=>f.name);
-    availableFields = [...manualFields, ...iaFields];
-  } else {
-    const iaFields = getNpFields().filter(f=>f.name.trim()).map(f=>f.name);
-    const manualFields = getNpManualFields().filter(f=>f.name.trim()).map(f=>f.name);
-    availableFields = [...manualFields, ...iaFields];
-  }
-  
-  // Generate auto-suggestions if no saved mapping, otherwise use saved
-  const mapping = Object.keys(savedMapping).length > 0 
-    ? savedMapping 
-    : autoSuggestMapping(excelHeaders, availableFields);
-  
-  mapContext = { target, headers: excelHeaders, fields: availableFields, mapping, pendingAction };
-  
-  const specialOpts = [
-    {value:'__none__', label:'— No mapear —'},
-    {value:'__archivo__', label:'📎 Nombre del archivo'},
-    {value:'__fecha_hoy__', label:'📅 Fecha de hoy (automático)'},
-    {value:'__fecha_analisis__', label:'🕐 Fecha de análisis'},
-  ];
-  
-  const body = document.getElementById('mapModalBody');
-  body.innerHTML = excelHeaders.map((header, i) => {
-    const current = mapping[i] || '__none__';
-    const isMatched = current !== '__none__';
-    const allOpts = [
-      ...specialOpts,
-      ...availableFields.map(f => ({value:f, label:f}))
-    ];
-    const options = allOpts.map(o => 
-      `<option value="${esc(o.value)}" ${o.value===current?'selected':''}>${esc(o.label)}</option>`
-    ).join('');
-    return `
-      <div class="map-row">
-        <span class="map-col-idx">${String.fromCharCode(65+i)}</span>
-        <span class="map-col-name" title="${esc(String(header))}">${esc(String(header||'(vacío)'))}</span>
-        <span class="map-arrow">→</span>
-        <select class="map-select ${isMatched?'matched':'unmatched'}" 
-          onchange="mapContext.mapping[${i}]=this.value;this.className='map-select '+(this.value!=='__none__'?'matched':'unmatched')"
-        >${options}</select>
-      </div>`;
-  }).join('');
-  
-  document.getElementById('mapModal').classList.remove('hidden');
-}
-
-async function mapModalConfirm() {
-  const mapKey = mapContext.target === 'rend' ? REND_MAPPING_KEY : NP_MAPPING_KEY;
-  saveMapping(mapKey, mapContext.mapping);
-  mapModalClose();
-  // Execute the pending action with the confirmed mapping
-  await mapContext.pendingAction(mapContext.mapping);
-}
-
-// ── Load Excel headers helper ─────────────────────────
-async function loadExcelHeadersAndShowMapping(target, itemId, siteId) {
-  try {
-    const token = await getMsToken();
-    const sid = siteId || await getSiteId(token);
-    const resp = await fetch(
-      `https://graph.microsoft.com/v1.0/sites/${sid}/drive/items/${itemId}/content`,
-      {headers:{Authorization:'Bearer '+token}}
-    );
-    if (!resp.ok) return;
-    const ab = await resp.arrayBuffer();
-    const wb = XLSX.read(ab, {type:'array'});
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
-    const headers = (rows[0] || []).map(h => String(h||''));
-    if (!headers.length) return;
-    
-    const mapKey = target === 'rend' ? REND_MAPPING_KEY : NP_MAPPING_KEY;
-    const savedMapping = getMapping(mapKey);
-    
-    showMappingModal(target, headers, savedMapping, async (mapping) => {
-      // This runs after user confirms mapping
-      // Just save - actual insert happens via confirm button
-    });
-  } catch(e) {
-    console.log('Could not load Excel headers:', e.message);
-  }
-}
-
-// ── Insert rows using mapping ──────────────────────────
-function buildRowFromMapping(mapping, excelHeaders, record, manualValues, manualFields, iaFields) {
-  const row = new Array(excelHeaders.length).fill('');
-  Object.entries(mapping).forEach(([colIdx, fieldName]) => {
-    const i = parseInt(colIdx);
-    if (fieldName === '__none__') return;
-    if (fieldName === '__fecha_hoy__') { row[i] = today(); return; }
-    if (fieldName === '__archivo__') { row[i] = record.__archivo__ || ''; return; }
-    if (fieldName === '__fecha_analisis__') { row[i] = record.__fecha_analisis__ || ''; return; }
-    // Check manual fields
-    const mf = manualFields.find(f => f.name === fieldName);
-    if (mf) { row[i] = manualValues[fieldName] || ''; return; }
-    // Check IA fields
-    if (record[fieldName] != null) row[i] = record[fieldName];
-  });
-  return row;
-}
+function npGenerateAllNP(){}
+function npCargarUltimoNP(){}
+function npShowModal_old(){}
+// Legacy compatibility
+const npExtractedList = [];
+const npManualValues = {};
+const npFiles = [];
 
 // ── Drag to reorder fields ────────────────────────────
 let dragSrcList = null;
