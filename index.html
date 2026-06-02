@@ -1382,14 +1382,7 @@ function npCfgAddIA(pfx)          { const f=npGetIA(pfx);f.push({name:'',desc:''
 function npCfgRemoveManual(pfx,i) { const f=npGetManual(pfx);f.splice(i,1);npSaveManual(pfx,f);npCfgRenderManual(pfx); }
 function npCfgAddManual(pfx)      { const f=npGetManual(pfx);f.push({name:'',desc:''});npSaveManual(pfx,f);npCfgRenderManual(pfx); }
 
-// Wire drag system to NP config lists
-const _origFieldListGetters = fieldListGetters;
-Object.assign(fieldListGetters, {
-  'np-loc-ia':     [()=>npGetIA('np-loc'),     f=>npSaveIA('np-loc',f),     ()=>npCfgRenderIA('np-loc')],
-  'np-loc-manual': [()=>npGetManual('np-loc'), f=>npSaveManual('np-loc',f), ()=>npCfgRenderManual('np-loc')],
-  'np-int-ia':     [()=>npGetIA('np-int'),     f=>npSaveIA('np-int',f),     ()=>npCfgRenderIA('np-int')],
-  'np-int-manual': [()=>npGetManual('np-int'), f=>npSaveManual('np-int',f), ()=>npCfgRenderManual('np-int')],
-});
+// Wire drag system to NP config lists — done after fieldListGetters is defined (see below)
 
 // ── Template selection via fbOpen ─────────────────────
 // fbSelectFile extended for tmpl targets
@@ -1901,6 +1894,10 @@ const fieldListGetters = {
   'rend-manual': [getRendManualFields, saveRendManualFields, renderRendManualFields],
   'np-ia':       [getNpFields,       saveNpFields,       renderNpFields],
   'np-manual':   [getNpManualFields, saveNpManualFields, renderNpManualFields],
+  'np-loc-ia':     [()=>npGetIA('np-loc'),     f=>npSaveIA('np-loc',f),     ()=>npCfgRenderIA('np-loc')],
+  'np-loc-manual': [()=>npGetManual('np-loc'), f=>npSaveManual('np-loc',f), ()=>npCfgRenderManual('np-loc')],
+  'np-int-ia':     [()=>npGetIA('np-int'),     f=>npSaveIA('np-int',f),     ()=>npCfgRenderIA('np-int')],
+  'np-int-manual': [()=>npGetManual('np-int'), f=>npSaveManual('np-int',f), ()=>npCfgRenderManual('np-int')],
 };
 
 function dragStart(event, listKey, idx) {
