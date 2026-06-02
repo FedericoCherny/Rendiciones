@@ -7,65 +7,44 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Rendiciones" />
-  <title>Rendiciones IA</title>
+  <meta name="apple-mobile-web-app-title" content="GAIA" />
+  <title>GAIA — Gestión IA Aeration</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="msal-browser.min.js"></script>
   <style>
     :root {
-      --bg: #f5f5f3;
-      --surface: #ffffff;
-      --surface2: #f0efeb;
-      --border: #e0dfd8;
-      --text: #1a1a18;
-      --text2: #6b6b67;
-      --text3: #9b9b97;
-      --accent: #1a1a18;
-      --accent-fg: #ffffff;
-      --green: #2d6a2d;
-      --green-bg: #eaf3ea;
-      --amber: #7a5200;
-      --amber-bg: #fdf3d7;
-      --red: #a32d2d;
-      --red-bg: #fcebeb;
-      --blue: #1a4a8a;
-      --blue-bg: #e6f0fb;
-      --radius: 12px;
-      --radius-sm: 8px;
+      --bg: #f5f5f3; --surface: #ffffff; --surface2: #f0efeb; --border: #e0dfd8;
+      --text: #1a1a18; --text2: #6b6b67; --text3: #9b9b97;
+      --accent: #1a1a18; --accent-fg: #ffffff;
+      --green: #2d6a2d; --green-bg: #eaf3ea;
+      --amber: #7a5200; --amber-bg: #fdf3d7;
+      --red: #a32d2d; --red-bg: #fcebeb;
+      --blue: #1a4a8a; --blue-bg: #e6f0fb;
+      --radius: 12px; --radius-sm: 8px;
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #111110;
-        --surface: #1c1c1a;
-        --surface2: #252522;
-        --border: #2e2e2b;
-        --text: #e8e8e4;
-        --text2: #9b9b97;
-        --text3: #6b6b67;
-        --accent: #e8e8e4;
-        --accent-fg: #111110;
-        --green: #6dbf6d;
-        --green-bg: #1a2e1a;
-        --amber: #f0b429;
-        --amber-bg: #2a2010;
-        --red: #e57373;
-        --red-bg: #2a1515;
-        --blue: #6fa3e0;
-        --blue-bg: #131c2a;
+        --bg: #111110; --surface: #1c1c1a; --surface2: #252522; --border: #2e2e2b;
+        --text: #e8e8e4; --text2: #9b9b97; --text3: #6b6b67;
+        --accent: #e8e8e4; --accent-fg: #111110;
+        --green: #6dbf6d; --green-bg: #1a2e1a;
+        --amber: #f0b429; --amber-bg: #2a2010;
+        --red: #e57373; --red-bg: #2a1515;
+        --blue: #6fa3e0; --blue-bg: #131c2a;
       }
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; overflow: hidden; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 16px; }
 
-    /* Layout */
     .app { display: flex; flex-direction: column; height: 100dvh; }
-    .header { padding: 16px 20px 12px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; padding-top: max(16px, env(safe-area-inset-top, 16px)); }
-    .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
-    .header p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+    .header { padding: 16px 20px 12px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; padding-top: max(16px, env(safe-area-inset-top, 16px)); display: flex; justify-content: space-between; align-items: center; }
+    .header-left h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+    .header-left h1 span { color: var(--text2); font-weight: 400; font-size: 14px; margin-left: 6px; }
+    .header-left p { font-size: 12px; color: var(--text2); margin-top: 2px; }
     .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     .nav { display: flex; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; padding-bottom: max(var(--safe-bottom), 8px); }
     .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 4px 6px; border: none; background: transparent; color: var(--text3); font-size: 10px; font-family: inherit; cursor: pointer; transition: color 0.15s; }
@@ -73,21 +52,16 @@
     .nav-btn.active { color: var(--text); }
     .nav-btn.active svg { stroke-width: 2.2; }
 
-    /* Panels */
     .panel { display: none; padding: 20px; }
     .panel.active { display: block; }
 
-    /* Cards */
     .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px; margin-bottom: 12px; }
-    .card-label { font-size: 12px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .card-label { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
 
-    /* Inputs */
     input, textarea, select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 15px; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
     input:focus, textarea:focus { border-color: var(--text3); }
-    input[type=password] { font-family: monospace; letter-spacing: 2px; }
     label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 6px; }
 
-    /* Buttons */
     .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: var(--radius); font-size: 16px; font-weight: 500; font-family: inherit; cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s; }
     .btn:active { transform: scale(0.98); }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
@@ -95,19 +69,15 @@
     .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
     .btn-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
     .btn-sm { padding: 8px 14px; font-size: 14px; border-radius: var(--radius-sm); width: auto; }
+    .btn-icon { background: transparent; border: none; color: var(--text2); cursor: pointer; padding: 4px 6px; border-radius: 6px; font-size: 14px; }
+    .btn-icon:hover { background: var(--surface2); }
 
-    /* Upload zone */
-    .step-num { width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--text2);flex-shrink:0; }
-.step-num.active { background:var(--blue-bg);color:var(--blue);border-color:var(--blue); }
-.step-num.done { background:var(--green-bg);color:var(--green);border-color:var(--green); }
-
-.drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 36px 20px; text-align: center; cursor: pointer; transition: background 0.15s; background: var(--surface); }
-    .drop-zone.drag-over { background: var(--surface2); border-color: var(--text3); }
-    .drop-icon { font-size: 40px; margin-bottom: 10px; }
+    .drop-zone { border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 2rem; text-align: center; cursor: pointer; transition: background 0.15s; margin-bottom: 1rem; }
+    .drop-zone:hover, .drop-zone.drag-over { background: var(--surface2); border-color: var(--border); }
+    .drop-icon { font-size: 32px; margin-bottom: 8px; }
     .drop-zone p { font-size: 15px; color: var(--text); margin-bottom: 4px; font-weight: 500; }
     .drop-zone span { font-size: 13px; color: var(--text2); }
 
-    /* File list */
     .file-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 8px; }
     .file-icon { font-size: 24px; flex-shrink: 0; }
     .file-info { flex: 1; min-width: 0; }
@@ -119,176 +89,185 @@
     .badge-done { background: var(--green-bg); color: var(--green); }
     .badge-error { background: var(--red-bg); color: var(--red); }
 
-    /* Progress */
     .progress-wrap { margin-bottom: 16px; }
     .progress-label { font-size: 13px; color: var(--text2); margin-bottom: 6px; display: flex; justify-content: space-between; }
     .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
     .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
 
-    /* Fields */
-    .field-row { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; }
-    .field-row input { font-size: 14px; padding: 8px 10px; margin-bottom: 6px; }
-    .field-row input:last-of-type { margin-bottom: 0; }
-    .field-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
-    .remove-btn { background: var(--red-bg); color: var(--red); border: none; border-radius: var(--radius-sm); padding: 6px 10px; font-size: 12px; cursor: pointer; font-family: inherit; }
+    /* Fields editor */
+    .field-row { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 8px; }
+    .field-row-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .field-row-top input { flex: 1; font-size: 14px; padding: 8px 10px; }
+    .field-row input.desc-input { font-size: 13px; padding: 7px 10px; color: var(--text2); }
+    .remove-btn { background: var(--red-bg); color: var(--red); border: none; border-radius: var(--radius-sm); padding: 6px 10px; font-size: 13px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
 
-    /* Results */
+    /* Result cards */
     .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
-    .result-filename { font-size: 13px; color: var(--text2); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-    .result-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-    .result-row:last-child { border-bottom: none; padding-bottom: 0; }
-    .result-key { font-size: 13px; color: var(--text2); flex-shrink: 0; max-width: 45%; }
-    .result-val { font-size: 14px; font-weight: 500; text-align: right; word-break: break-word; }
+    .result-filename { font-size: 13px; color: var(--text2); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .result-field { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .result-field:last-child { border-bottom: none; padding-bottom: 0; }
+    .result-key { font-size: 13px; color: var(--text2); flex-shrink: 0; max-width: 40%; }
+    .result-val { font-size: 14px; font-weight: 500; text-align: right; word-break: break-word; flex: 1; background: transparent; border: none; color: var(--text); font-family: inherit; outline: none; cursor: text; padding: 2px 6px; border-radius: 4px; }
+    .result-val:focus { background: var(--blue-bg); }
 
-    /* Admin lock */
-    .locked-overlay { text-align: center; padding: 40px 20px; }
-    .locked-overlay .lock-icon { font-size: 48px; margin-bottom: 12px; }
-    .locked-overlay p { color: var(--text2); font-size: 14px; margin-bottom: 20px; }
+    /* Step indicator */
+    .step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--text2); flex-shrink: 0; }
+    .step-num.active { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+    .step-num.done { background: var(--green-bg); color: var(--green); border-color: var(--green); }
 
-    .divider { height: 1px; background: var(--border); margin: 16px 0; }
-    .hint { font-size: 12px; color: var(--text3); margin-top: 6px; line-height: 1.5; }
+    .np-step-disabled { opacity: 0.5; pointer-events: none; }
+
+    .status-msg { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-top: 10px; }
+    .status-loading { background: var(--blue-bg); color: var(--blue); }
+    .status-success { background: var(--green-bg); color: var(--green); }
+    .status-error { background: var(--red-bg); color: var(--red); }
+
     .empty { text-align: center; padding: 48px 20px; color: var(--text2); font-size: 14px; }
     .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
     .gap { height: 12px; }
     .row { display: flex; gap: 8px; }
     .row .btn { flex: 1; }
+    .hint { font-size: 12px; color: var(--text3); margin-top: 6px; line-height: 1.5; }
+
+    /* Login btn */
+    #msLoginBtn { border: 1px solid var(--border); background: var(--surface2); color: var(--text2); border-radius: var(--radius-sm); padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0; }
+
+    /* NP preview */
+    .np-preview { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; border: 1px solid var(--border); margin-top: 12px; }
+    .np-preview-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .np-preview-row:last-child { border-bottom: none; }
+    .np-preview-row .k { color: var(--text2); }
+    .np-preview-row .v { font-weight: 600; text-align: right; max-width: 60%; font-size: 12px; }
+    .np-items-header { display: grid; grid-template-columns: 28px 36px 1fr 64px 64px; gap: 4px; padding: 5px 0; border-bottom: 2px solid var(--border); font-size: 11px; font-weight: 600; color: var(--text2); margin-top: 10px; }
+    .np-item-row { display: grid; grid-template-columns: 28px 36px 1fr 64px 64px; gap: 4px; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+
+    /* Admin locked */
+    .locked-overlay { text-align: center; padding: 40px 20px; }
   </style>
 </head>
 <body>
 <div class="app">
-  <div class="header" style="display:flex;justify-content:space-between;align-items:center">
-    <div>
-      <h1>📋 Rendiciones IA</h1>
-      <p id="headerSub">Cargá comprobantes y extraé datos automáticamente</p>
+  <div class="header">
+    <div class="header-left">
+      <h1>GAIA <span>v2.0</span></h1>
+      <p>Gestión IA · Aeration Argentina</p>
     </div>
-    <button id="msLoginBtn" onclick="toggleMsLogin()" style="border:1px solid var(--border);background:var(--surface2);color:var(--text2);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">
-      Iniciar sesión
-    </button>
+    <button id="msLoginBtn" onclick="toggleMsLogin()">Iniciar sesión</button>
   </div>
 
   <div class="content">
-    <!-- PANEL: Cargar -->
-    <div class="panel active" id="panel-upload">
+
+    <!-- ═══ PANEL: Rendiciones ═══ -->
+    <div class="panel active" id="panel-rend">
       <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
         <div class="drop-icon">📎</div>
         <p>Tocá para seleccionar archivos</p>
-        <span>PDF, JPG, JPEG, PNG</span>
+        <span>PDF, JPG, JPEG, PNG — podés subir varios</span>
       </div>
       <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="handleFiles(this.files)" />
-
-      <div class="gap"></div>
       <div id="fileList"></div>
-
       <div id="progressWrap" class="progress-wrap" style="display:none">
         <div class="progress-label"><span id="progressText">Procesando...</span><span id="progressPct">0%</span></div>
         <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       </div>
-
-      <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeAll()" disabled>
-        ✦ Analizar con IA
-      </button>
+      <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeAll()" disabled>✦ Analizar con IA</button>
+      <div class="gap"></div>
+      <div id="rendResultsArea"></div>
     </div>
 
-    <!-- PANEL: Notas de Pedido (Compras/COMEX) -->
-  <div class="panel" id="panel-np">
-    <!-- PASO 1: PDF -->
-    <div class="card" style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <div class="step-num active" id="np-num1">1</div>
-        <div>
-          <div style="font-size:15px;font-weight:600">Subir PDF de Proforma</div>
-          <div style="font-size:12px;color:var(--text2)">Proforma Invoice del proveedor</div>
+    <!-- ═══ PANEL: Notas de Pedido ═══ -->
+    <div class="panel" id="panel-np">
+      <!-- Paso 1 -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="step-num active" id="np-num1">1</div>
+          <div><div style="font-size:15px;font-weight:600">Subir PDF de Proforma</div><div style="font-size:12px;color:var(--text2)">Proforma Invoice del proveedor</div></div>
         </div>
-      </div>
-      <div class="drop-zone" id="npDropZone" onclick="document.getElementById('np-pdf-input').click()">
-        <div class="drop-icon">📄</div>
-        <p>Tocá para seleccionar el PDF</p>
-        <span>Solo PDF</span>
-      </div>
-      <input type="file" id="np-pdf-input" accept=".pdf" style="display:none" onchange="npHandlePDF(this)" />
-      <div id="np-pdf-name"></div>
-    </div>
-
-    <!-- PASO 2: Datos + extracción -->
-    <div class="card np-step" id="np-step2" style="margin-bottom:12px;opacity:0.5;pointer-events:none">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <div class="step-num" id="np-num2">2</div>
-        <div>
-          <div style="font-size:15px;font-weight:600">Datos del Registro NP</div>
-          <div style="font-size:12px;color:var(--text2)">Completá los campos y extraé datos del PDF</div>
+        <div class="drop-zone" onclick="document.getElementById('np-pdf-input').click()">
+          <div class="drop-icon">📄</div>
+          <p>Tocá para seleccionar el PDF</p>
+          <span>Solo PDF</span>
         </div>
+        <input type="file" id="np-pdf-input" accept=".pdf" style="display:none" onchange="npHandlePDF(this)" />
+        <div id="np-pdf-name"></div>
       </div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Campos manuales</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-        <div>
-          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">NP Nº (automático)</label>
-          <input type="number" id="np-num-input" placeholder="Cargando..." readonly style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:14px;font-family:inherit" />
+      <!-- Paso 2 -->
+      <div class="card np-step-disabled" id="np-step2">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="step-num" id="np-num2">2</div>
+          <div><div style="font-size:15px;font-weight:600">Datos del Registro NP</div><div style="font-size:12px;color:var(--text2)">Completá los campos manuales y extraé con IA</div></div>
         </div>
-        <div>
-          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">IMP Nº</label>
-          <input type="number" id="np-imp-num" placeholder="ej: 1544" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:14px;font-family:inherit" />
+        <div class="card-label">Campos manuales</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><label>NP Nº (automático)</label><input type="number" id="np-num-input" placeholder="Cargando..." readonly /></div>
+          <div><label>IMP Nº</label><input type="number" id="np-imp-num" placeholder="ej: 1544" /></div>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><label>Obra / Cliente</label><input type="text" id="np-obra" placeholder="ej: San Sebastián" /></div>
+          <div><label>Responsable</label><input type="text" id="np-resp" placeholder="ej: FP" /></div>
+        </div>
+        <div style="margin-bottom:14px"><label>Equipos / Servicios</label><input type="text" id="np-equip" placeholder="ej: BOMBAS TSURUMI" /></div>
+        <div class="card-label">Extracción con IA</div>
+        <button class="btn btn-primary" id="np-extract-btn" onclick="npExtractData()" disabled>✦ Extraer datos del PDF con IA</button>
+        <div id="np-status-bar"></div>
+        <div id="np-preview-area"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-        <div>
-          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Obra / Cliente</label>
-          <input type="text" id="np-obra" placeholder="ej: San Sebastián" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:14px;font-family:inherit" />
+      <!-- Paso 3 -->
+      <div class="card np-step-disabled" id="np-step3">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="step-num" id="np-num3">3</div>
+          <div><div style="font-size:15px;font-weight:600">Generar archivos</div><div style="font-size:12px;color:var(--text2)">Insertá la fila y descargá la Nota de Pedido</div></div>
         </div>
-        <div>
-          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Responsable</label>
-          <input type="text" id="np-resp" placeholder="ej: FP" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:14px;font-family:inherit" />
-        </div>
-      </div>
-      <div style="margin-bottom:12px">
-        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Equipos / Servicios</label>
-        <input type="text" id="np-equip" placeholder="ej: BOMBAS TSURUMI" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:14px;font-family:inherit" />
-      </div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Extracción con IA</p>
-      <button class="btn btn-primary" id="np-extract-btn" onclick="npExtractData()" disabled>✦ Extraer datos del PDF con IA</button>
-      <div id="np-status-bar" style="margin-top:10px;font-size:13px;display:none"></div>
-      <div id="np-preview-area"></div>
-    </div>
-
-    <!-- PASO 3: Generar -->
-    <div class="card np-step" id="np-step3" style="opacity:0.5;pointer-events:none">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <div class="step-num" id="np-num3">3</div>
-        <div>
-          <div style="font-size:15px;font-weight:600">Generar archivos</div>
-          <div style="font-size:12px;color:var(--text2)">Insertá la fila y descargá la Nota de Pedido</div>
-        </div>
-      </div>
-      <button class="btn btn-primary" id="np-btn-registro" onclick="npInsertarFila()" disabled style="margin-bottom:8px">☁️ Insertar fila en Registro NP (SharePoint)</button>
-      <button class="btn btn-secondary" id="np-btn-np" onclick="npGenerateNP()" disabled>📄 Descargar Nota de Pedido (.xlsx)</button>
-      <div id="np-gen-status" style="margin-top:10px;font-size:13px;display:none"></div>
-    </div>
-  </div>
-
-  <!-- PANEL: Resultados -->
-    <div class="panel" id="panel-results">
-      <div id="resultsArea">
-        <div class="empty"><div class="empty-icon">📊</div>Aún no hay resultados.<br>Cargá y analizá archivos primero.</div>
+        <button class="btn btn-primary" id="np-btn-registro" onclick="npInsertarFila()" disabled style="margin-bottom:8px">☁️ Insertar fila en Registro NP</button>
+        <button class="btn btn-secondary" id="np-btn-np" onclick="npGenerateNP()" disabled>📄 Descargar Nota de Pedido (.xlsx)</button>
+        <div id="np-gen-status"></div>
       </div>
     </div>
 
-    <!-- PANEL: Admin -->
+    <!-- ═══ PANEL: Config Rendiciones ═══ -->
+    <div class="panel" id="panel-cfg-rend">
+      <div class="card">
+        <div class="card-label">Campos a extraer — Rendiciones</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Definí qué información debe extraer la IA de cada comprobante.</p>
+        <div id="rendFieldList"></div>
+        <button class="btn btn-secondary" onclick="rendAddField()" style="margin-top:4px">+ Agregar campo</button>
+      </div>
+    </div>
+
+    <!-- ═══ PANEL: Config NP ═══ -->
+    <div class="panel" id="panel-cfg-np">
+      <div class="card">
+        <div class="card-label">Campos a extraer — Notas de Pedido</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Estos campos se extraen automáticamente de la Proforma Invoice.</p>
+        <div id="npFieldList"></div>
+        <button class="btn btn-secondary" onclick="npAddField()" style="margin-top:4px">+ Agregar campo</button>
+        <p class="hint" style="margin-top:10px">Los campos manuales (NP Nº, IMP Nº, Obra, Responsable, Equipos) siempre aparecen y no se configuran acá.</p>
+      </div>
+    </div>
+
+    <!-- ═══ PANEL: Admin ═══ -->
     <div class="panel" id="panel-admin">
       <div id="adminContent"></div>
     </div>
+
   </div>
 
   <nav class="nav">
-    <button class="nav-btn active" id="nav-upload" onclick="switchPanel('upload')">
-      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <button class="nav-btn active" id="nav-rend" onclick="switchPanel('rend')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Rendiciones
     </button>
     <button class="nav-btn" id="nav-np" onclick="switchPanel('np')">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       Notas NP
     </button>
-    <button class="nav-btn" id="nav-results" onclick="switchPanel('results')">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-      Resultados
+    <button class="nav-btn" id="nav-cfg-rend" onclick="switchPanel('cfg-rend')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Config Rend
+    </button>
+    <button class="nav-btn" id="nav-cfg-np" onclick="switchPanel('cfg-np')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Config NP
     </button>
     <button class="nav-btn" id="nav-admin" onclick="switchPanel('admin')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M12 14c-5 0-8 2-8 3v1h16v-1c0-1-3-3-8-3z"/></svg>
@@ -298,14 +277,13 @@
 </div>
 
 <script>
-// ── State ──────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────
 const ADMIN_PIN_KEY  = 'rend_admin_pin';
 const FIELDS_KEY     = 'rend_fields';
+const NP_FIELDS_KEY  = 'np_fields';
 const API_KEY_KEY    = 'rend_api_key';
-const WEBHOOK_KEY    = 'rend_webhook_url';
-const SP_MODE_KEY    = 'rend_sp_mode'; // 'append' | 'new'
 
-const DEFAULT_FIELDS = [
+const DEFAULT_REND_FIELDS = [
   { name: 'Fecha',               desc: 'Fecha del comprobante (DD/MM/AAAA)' },
   { name: 'Proveedor',           desc: 'Razón social o nombre del emisor' },
   { name: 'CUIT emisor',         desc: 'CUIT del proveedor (XX-XXXXXXXX-X)' },
@@ -317,231 +295,22 @@ const DEFAULT_FIELDS = [
   { name: 'Concepto',            desc: 'Qué se compró o contrató' },
 ];
 
-let files = [];
-let results = JSON.parse(localStorage.getItem('rend_results') || '[]');
-let cancelled = false;
-let adminUnlocked = false;
+const DEFAULT_NP_FIELDS = [
+  { name: 'proveedor',        desc: 'Nombre completo del proveedor que emite la proforma' },
+  { name: 'atencion',         desc: 'Nombre del contacto o vendedor' },
+  { name: 'telefono',         desc: 'Teléfono del proveedor' },
+  { name: 'email',            desc: 'Email del proveedor' },
+  { name: 'ref_no',           desc: 'Número de referencia de la proforma' },
+  { name: 'fecha',            desc: 'Fecha en formato DD/MM/YYYY' },
+  { name: 'moneda',           desc: 'USD u otra moneda indicada' },
+  { name: 'monto_total',      desc: 'Total como número sin símbolo de moneda' },
+  { name: 'plazo_pago',       desc: 'Condición de pago completa' },
+  { name: 'plazo_entrega',    desc: 'Plazo o tiempo de entrega indicado' },
+  { name: 'incoterm',         desc: 'Incoterm completo incluyendo el lugar' },
+  { name: 'empresa_compradora', desc: 'Nombre de la empresa compradora' },
+  { name: 'observaciones',    desc: 'Remarks o notas relevantes, máx 200 caracteres' },
+];
 
-function getFields()    { return JSON.parse(localStorage.getItem(FIELDS_KEY) || 'null') || DEFAULT_FIELDS; }
-function saveFields(f)  { localStorage.setItem(FIELDS_KEY, JSON.stringify(f)); }
-function getApiKey()    { return localStorage.getItem(API_KEY_KEY) || ''; }
-function saveApiKey(k)  { localStorage.setItem(API_KEY_KEY, k); }
-function getPin()       { return localStorage.getItem(ADMIN_PIN_KEY) || ''; }
-function savePin(p)     { localStorage.setItem(ADMIN_PIN_KEY, p); }
-function getWebhook()   { return localStorage.getItem(WEBHOOK_KEY) || ''; }
-function saveWebhook(u) { localStorage.setItem(WEBHOOK_KEY, u); }
-function getSpMode()    { return localStorage.getItem(SP_MODE_KEY) || 'append'; }
-function saveSpMode(m)  { localStorage.setItem(SP_MODE_KEY, m); }
-function saveResults()  { try { localStorage.setItem('rend_results', JSON.stringify(results)); } catch(e){} }
-
-// ── Navigation ─────────────────────────────────────────
-function switchPanel(name) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-' + name).classList.add('active');
-  document.getElementById('nav-' + name).classList.add('active');
-  if (name === 'results') renderResults();
-  if (name === 'admin') renderAdmin();
-  if (name === 'np' && msAccount) npCargarUltimoNP();
-}
-
-// ── File handling ──────────────────────────────────────
-const dropZone = document.getElementById('dropZone');
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
-
-function handleFiles(list) {
-  Array.from(list).forEach(f => {
-    if (!files.find(x => x.file.name === f.name && x.file.size === f.size))
-      files.push({ file: f, status: 'pending', error: null });
-  });
-  renderFileList();
-  document.getElementById('analyzeBtn').disabled = !files.length || !getApiKey();
-}
-
-function formatSize(b) {
-  if (b < 1024) return b + ' B';
-  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
-  return (b/1024/1024).toFixed(1) + ' MB';
-}
-
-function renderFileList() {
-  const el = document.getElementById('fileList');
-  if (!files.length) { el.innerHTML = ''; return; }
-  const icons = { 'application/pdf': '📄', 'image/png': '🖼️', 'image/jpeg': '🖼️' };
-  const labels = { pending: 'Pendiente', processing: 'Procesando…', done: 'Listo ✓', error: 'Error' };
-  const badgeClass = { pending: 'badge-pending', processing: 'badge-processing', done: 'badge-done', error: 'badge-error' };
-  el.innerHTML = files.map((f, i) => `
-    <div class="file-item">
-      <div class="file-icon">${icons[f.file.type] || '📎'}</div>
-      <div class="file-info">
-        <div class="file-name">${esc(f.file.name)}</div>
-        <div class="file-size">${formatSize(f.file.size)}${f.error ? ' · ' + esc(f.error) : ''}</div>
-      </div>
-      <span class="badge ${badgeClass[f.status]}">${labels[f.status]}</span>
-    </div>`).join('');
-  document.getElementById('analyzeBtn').disabled = !files.length || !getApiKey();
-}
-
-// ── Analysis ───────────────────────────────────────────
-async function fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-}
-
-async function analyzeAll() {
-  const apiKey = getApiKey();
-  if (!apiKey) { alert('Configurá la API key en el panel Admin.'); return; }
-  const fields = getFields().filter(f => f.name.trim());
-  if (!fields.length) { alert('Configurá al menos un campo en Admin.'); return; }
-
-  cancelled = false;
-  const btn = document.getElementById('analyzeBtn');
-  btn.textContent = '⏹ Detener';
-  btn.onclick = () => { cancelled = true; };
-
-  const progressWrap = document.getElementById('progressWrap');
-  progressWrap.style.display = 'block';
-
-  let done = 0;
-  const pending = files.filter(f => f.status !== 'done');
-
-  for (let i = 0; i < files.length; i++) {
-    if (cancelled) break;
-    const item = files[i];
-    if (item.status === 'done') { done++; continue; }
-
-    item.status = 'processing';
-    renderFileList();
-
-    const pct = Math.round((done / files.length) * 100);
-    document.getElementById('progressFill').style.width = pct + '%';
-    document.getElementById('progressPct').textContent = pct + '%';
-    document.getElementById('progressText').textContent = `Analizando ${item.file.name}…`;
-
-    try {
-      const b64 = await fileToBase64(item.file);
-      const isPdf = item.file.type === 'application/pdf';
-      const mediaType = isPdf ? 'application/pdf' : item.file.type;
-      const fieldPrompt = fields.map((f, idx) => `${idx+1}. ${f.name}${f.desc ? ': ' + f.desc : ''}`).join('\n');
-
-      const systemPrompt = `Sos un asistente experto en análisis de comprobantes y documentos financieros argentinos.
-Extraé información de documentos de rendición de gastos.
-Respondé SOLO con JSON válido, sin texto adicional ni markdown.
-Claves exactas: ${fields.map(f => `"${f.name}"`).join(', ')}
-Si no encontrás un valor, usá null. Nunca inventes datos.`;
-
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: [
-            isPdf
-              ? { type: 'document', source: { type: 'base64', media_type: mediaType, data: b64 } }
-              : { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
-            { type: 'text', text: `Extraé estos campos:\n${fieldPrompt}\nRespondé solo con el JSON.` }
-          ]}]
-        })
-      });
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error?.message || `HTTP ${resp.status}`);
-      }
-
-      const data = await resp.json();
-      const text = data.content?.find(c => c.type === 'text')?.text || '{}';
-      const extracted = JSON.parse(text.replace(/```json|```/g, '').trim());
-      extracted['__archivo__'] = item.file.name;
-      extracted['__fecha_analisis__'] = new Date().toLocaleString('es-AR');
-      item.status = 'done';
-      item.error = null;
-
-      const idx = results.findIndex(r => r['__archivo__'] === item.file.name);
-      if (idx >= 0) results[idx] = extracted; else results.push(extracted);
-      saveResults();
-
-    } catch(e) {
-      item.status = 'error';
-      item.error = e.message.slice(0, 60);
-    }
-
-    done++;
-    const pctDone = Math.round((done / files.length) * 100);
-    document.getElementById('progressFill').style.width = pctDone + '%';
-    document.getElementById('progressPct').textContent = pctDone + '%';
-    renderFileList();
-  }
-
-  progressWrap.style.display = 'none';
-  btn.textContent = '✦ Analizar con IA';
-  btn.onclick = analyzeAll;
-  btn.disabled = !files.length;
-
-  if (results.length) switchPanel('results');
-}
-
-// ── Results ────────────────────────────────────────────
-function renderResults() {
-  const area = document.getElementById('resultsArea');
-  if (!results.length) {
-    area.innerHTML = `<div class="empty"><div class="empty-icon">📊</div>Aún no hay resultados.<br>Cargá y analizá archivos primero.</div>`;
-    return;
-  }
-  const fields = getFields().filter(f => f.name.trim());
-  const cards = results.map((r, ri) => {
-    const rows = fields.map(f => `
-      <div class="result-row">
-        <span class="result-key">${esc(f.name)}</span>
-        <span class="result-val">${esc(r[f.name] != null ? String(r[f.name]) : '—')}</span>
-      </div>`).join('');
-    return `
-      <div class="result-card">
-        <div class="result-filename">📄 ${esc(r['__archivo__'] || 'Archivo')} <span style="color:var(--text3);font-size:11px">${esc(r['__fecha_analisis__']||'')}</span></div>
-        ${rows}
-      </div>`;
-  }).join('');
-
-  area.innerHTML = `
-    <div style="margin-bottom:16px;display:flex;flex-direction:column;gap:8px">
-      <div class="row">
-        <button class="btn btn-green btn-sm" onclick="exportExcel()">⬇ Excel local</button>
-        <button class="btn btn-secondary btn-sm" onclick="clearResults()">🗑 Limpiar</button>
-      </div>
-      <button class="btn btn-primary" onclick="sendToSharePoint('append')" style="font-size:14px;padding:12px">☁️ Enviar a SharePoint</button>
-    </div>
-    ${cards}`;
-}
-
-function exportExcel() {
-  const fields = getFields().filter(f => f.name.trim());
-  const headers = ['Archivo', 'Fecha de análisis', ...fields.map(f => f.name)];
-  const rows = results.map(r => [
-    r['__archivo__'] || '',
-    r['__fecha_analisis__'] || '',
-    ...fields.map(f => r[f.name] != null ? r[f.name] : '')
-  ]);
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  ws['!cols'] = headers.map((h, i) => ({ wch: Math.min(Math.max(h.length, ...rows.map(r => String(r[i]||'').length)) + 2, 40) }));
-  XLSX.utils.book_append_sheet(wb, ws, 'Rendiciones');
-  XLSX.writeFile(wb, `rendiciones_${new Date().toISOString().slice(0,10)}.xlsx`);
-}
-
-// ── Microsoft Auth (MSAL) ──────────────────────────────
 const MSAL_CONFIG = {
   auth: {
     clientId: 'd1719d1c-2dcd-4ced-98f6-b474a926ac4f',
@@ -550,37 +319,263 @@ const MSAL_CONFIG = {
   },
   cache: { cacheLocation: 'localStorage' }
 };
-const SCOPES = ['Files.ReadWrite', 'Sites.Read.All', 'User.Read'];
+const SCOPES = ['Files.ReadWrite', 'Sites.Read.All', 'Sites.ReadWrite.All', 'User.Read'];
 const SHAREPOINT_HOST = 'aerationargentina.sharepoint.com';
 const SITE_NAME = 'as';
-const FOLDER_PATH = 'Operaciones y Mantenimiento/IA/Admin/Pendientes';
-const COMPROBANTES_PATH = 'Operaciones y Mantenimiento/IA/Admin/Comprobantes';
+const REND_PENDIENTES  = 'Operaciones y Mantenimiento/IA/Admin/Pendientes';
+const REND_COMPROBANTES = 'Operaciones y Mantenimiento/IA/Admin/Comprobantes';
+const NP_FOLDER   = 'Operaciones y Mantenimiento/IA/Compras-COMEX';
+const NP_REGISTRO = 'Operaciones y Mantenimiento/IA/Compras-COMEX/Registro NP prueba.xlsx';
 
+// ── State ──────────────────────────────────────────────
+let files = [];
+let results = JSON.parse(localStorage.getItem('rend_results') || '[]');
+let cancelled = false;
+let adminUnlocked = false;
 let msalInstance = null;
 let msAccount = null;
+let npPdfB64 = null;
+let npExtractedData = null;
 
+// ── Storage helpers ────────────────────────────────────
+function getRendFields()  { return JSON.parse(localStorage.getItem(FIELDS_KEY) || 'null') || DEFAULT_REND_FIELDS; }
+function saveRendFields(f){ localStorage.setItem(FIELDS_KEY, JSON.stringify(f)); }
+function getNpFields()    { return JSON.parse(localStorage.getItem(NP_FIELDS_KEY) || 'null') || DEFAULT_NP_FIELDS; }
+function saveNpFields(f)  { localStorage.setItem(NP_FIELDS_KEY, JSON.stringify(f)); }
+function getApiKey()      { return localStorage.getItem(API_KEY_KEY) || ''; }
+function saveApiKey(k)    { localStorage.setItem(API_KEY_KEY, k); }
+function getPin()         { return localStorage.getItem(ADMIN_PIN_KEY) || ''; }
+function savePin(p)       { localStorage.setItem(ADMIN_PIN_KEY, p); }
+function saveResults()    { try { localStorage.setItem('rend_results', JSON.stringify(results)); } catch(e){} }
+
+// ── Navigation ─────────────────────────────────────────
+function switchPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'admin') renderAdmin();
+  if (name === 'cfg-rend') renderRendFields();
+  if (name === 'cfg-np') renderNpFields();
+  if (name === 'np' && msAccount) npCargarUltimoNP();
+  if (name === 'rend') renderRendResults();
+}
+
+// ── Utils ──────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function formatSize(b) { if(b<1024)return b+'B'; if(b<1048576)return(b/1024).toFixed(1)+'KB'; return(b/1048576).toFixed(1)+'MB'; }
+function today() { const d=new Date(); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
+
+function showMsg(id, type, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const c = { loading: 'status-loading', success: 'status-success', error: 'status-error' };
+  el.className = 'status-msg ' + (c[type] || '');
+  el.textContent = type === 'loading' ? '⏳ ' + msg : msg;
+  el.style.display = 'block';
+}
+
+// ── Field editors ──────────────────────────────────────
+function renderRendFields() {
+  const fields = getRendFields();
+  document.getElementById('rendFieldList').innerHTML = fields.map((f, i) => `
+    <div class="field-row">
+      <div class="field-row-top">
+        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="rendUpdateField(${i},'name',this.value)" />
+        <button class="remove-btn" onclick="rendRemoveField(${i})">✕</button>
+      </div>
+      <input class="desc-input" value="${esc(f.desc)}" placeholder="Descripción / instrucción para la IA" oninput="rendUpdateField(${i},'desc',this.value)" />
+    </div>`).join('');
+}
+
+function rendUpdateField(i, key, val) { const f=getRendFields(); f[i][key]=val; saveRendFields(f); }
+function rendRemoveField(i) { const f=getRendFields(); f.splice(i,1); saveRendFields(f); renderRendFields(); }
+function rendAddField() { const f=getRendFields(); f.push({name:'',desc:''}); saveRendFields(f); renderRendFields(); }
+
+function renderNpFields() {
+  const fields = getNpFields();
+  document.getElementById('npFieldList').innerHTML = fields.map((f, i) => `
+    <div class="field-row">
+      <div class="field-row-top">
+        <input value="${esc(f.name)}" placeholder="Nombre del campo (en inglés/español, ej: proveedor)" oninput="npUpdateField(${i},'name',this.value)" />
+        <button class="remove-btn" onclick="npRemoveField(${i})">✕</button>
+      </div>
+      <input class="desc-input" value="${esc(f.desc)}" placeholder="Instrucción para la IA" oninput="npUpdateField(${i},'desc',this.value)" />
+    </div>`).join('');
+}
+
+function npUpdateField(i, key, val) { const f=getNpFields(); f[i][key]=val; saveNpFields(f); }
+function npRemoveField(i) { const f=getNpFields(); f.splice(i,1); saveNpFields(f); renderNpFields(); }
+function npAddField() { const f=getNpFields(); f.push({name:'',desc:''}); saveNpFields(f); renderNpFields(); }
+
+// ── File handling (Rendiciones) ────────────────────────
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+
+function handleFiles(list) {
+  Array.from(list).forEach(f => {
+    if (!files.find(x => x.file.name===f.name && x.file.size===f.size))
+      files.push({ file:f, status:'pending', error:null });
+  });
+  renderFileList();
+  document.getElementById('analyzeBtn').disabled = !files.length || !getApiKey();
+}
+
+function renderFileList() {
+  const el = document.getElementById('fileList');
+  if (!files.length) { el.innerHTML=''; return; }
+  const icons = {'application/pdf':'📄','image/png':'🖼️','image/jpeg':'🖼️'};
+  const labels = {pending:'Pendiente',processing:'Procesando…',done:'Listo ✓',error:'Error'};
+  const cls = {pending:'badge-pending',processing:'badge-processing',done:'badge-done',error:'badge-error'};
+  el.innerHTML = files.map((f,i) => `
+    <div class="file-item">
+      <div class="file-icon">${icons[f.file.type]||'📎'}</div>
+      <div class="file-info">
+        <div class="file-name">${esc(f.file.name)}</div>
+        <div class="file-size">${formatSize(f.file.size)}${f.error?' · '+esc(f.error):''}</div>
+      </div>
+      <span class="badge ${cls[f.status]}">${labels[f.status]}</span>
+    </div>`).join('');
+  document.getElementById('analyzeBtn').disabled = !files.length || !getApiKey();
+}
+
+async function fileToBase64(file) {
+  return new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(file); });
+}
+
+// ── Analysis (Rendiciones) ─────────────────────────────
+async function analyzeAll() {
+  const apiKey = getApiKey();
+  if (!apiKey) { alert('Configurá la API key en Admin.'); switchPanel('admin'); return; }
+  const activeFields = getRendFields().filter(f => f.name.trim());
+  if (!activeFields.length) { alert('Configurá al menos un campo en Config Rendiciones.'); switchPanel('cfg-rend'); return; }
+
+  cancelled = false;
+  const btn = document.getElementById('analyzeBtn');
+  btn.textContent = '⏹ Detener';
+  btn.onclick = () => { cancelled = true; };
+
+  document.getElementById('progressWrap').style.display = 'block';
+  let done = 0;
+
+  for (let i = 0; i < files.length; i++) {
+    if (cancelled) break;
+    const item = files[i];
+    if (item.status === 'done') { done++; continue; }
+    item.status = 'processing';
+    renderFileList();
+    document.getElementById('progressText').textContent = `Analizando ${item.file.name}…`;
+
+    try {
+      const b64 = await fileToBase64(item.file);
+      const isPdf = item.file.type === 'application/pdf';
+      const mediaType = item.file.type;
+      const fieldPrompt = activeFields.map((f,idx) => `${idx+1}. ${f.name}${f.desc?': '+f.desc:''}`).join('\n');
+
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514', max_tokens: 1000,
+          system: `Sos un asistente experto en análisis de comprobantes financieros argentinos. Extraé información y respondé SOLO con JSON válido, sin texto adicional ni markdown. Claves: ${activeFields.map(f=>`"${f.name}"`).join(', ')}. Si no encontrás un valor usá null.`,
+          messages: [{ role:'user', content:[
+            isPdf ? {type:'document',source:{type:'base64',media_type:mediaType,data:b64}} : {type:'image',source:{type:'base64',media_type:mediaType,data:b64}},
+            {type:'text',text:`Extraé estos campos:\n${fieldPrompt}\nRespondé solo con el JSON.`}
+          ]}]
+        })
+      });
+      if (!resp.ok) { const e=await resp.json().catch(()=>({})); throw new Error(e.error?.message||'HTTP '+resp.status); }
+      const data = await resp.json();
+      const text = data.content?.find(c=>c.type==='text')?.text||'{}';
+      const extracted = JSON.parse(text.replace(/```json|```/g,'').trim());
+      extracted['__archivo__'] = item.file.name;
+      extracted['__fecha_analisis__'] = new Date().toLocaleString('es-AR');
+      item.status = 'done';
+      item.error = null;
+      const idx = results.findIndex(r=>r['__archivo__']===item.file.name);
+      if (idx>=0) results[idx]=extracted; else results.push(extracted);
+      saveResults();
+    } catch(e) {
+      item.status = 'error';
+      item.error = e.message.slice(0,60);
+    }
+
+    done++;
+    const pct = Math.round((done/files.length)*100);
+    document.getElementById('progressFill').style.width = pct+'%';
+    document.getElementById('progressPct').textContent = pct+'%';
+    renderFileList();
+  }
+
+  document.getElementById('progressWrap').style.display = 'none';
+  btn.textContent = '✦ Analizar con IA';
+  btn.onclick = analyzeAll;
+  btn.disabled = !files.length;
+  renderRendResults();
+}
+
+// ── Results (Rendiciones) ──────────────────────────────
+function renderRendResults() {
+  const area = document.getElementById('rendResultsArea');
+  if (!results.length) { area.innerHTML = ''; return; }
+  const fields = getRendFields().filter(f => f.name.trim());
+
+  const cards = results.map((r, ri) => {
+    const fieldRows = fields.map(f => `
+      <div class="result-field">
+        <span class="result-key">${esc(f.name)}</span>
+        <input class="result-val" value="${esc(r[f.name]!=null?String(r[f.name]):'')}" oninput="results[${ri}]['${f.name.replace(/'/g,"\\'")}'] = this.value; saveResults()" />
+      </div>`).join('');
+    return `
+      <div class="result-card">
+        <div class="result-filename">📄 ${esc(r['__archivo__']||'')} <span style="color:var(--text3);font-size:11px">${esc(r['__fecha_analisis__']||'')}</span></div>
+        ${fieldRows}
+      </div>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-green btn-sm" onclick="exportExcel()">⬇ Excel local</button>
+      <button class="btn btn-primary btn-sm" onclick="sendToSharePoint()">☁️ SharePoint</button>
+      <button class="btn btn-secondary btn-sm" onclick="clearResults()">🗑</button>
+    </div>
+    ${cards}`;
+}
+
+function exportExcel() {
+  const fields = getRendFields().filter(f => f.name.trim());
+  const headers = ['Archivo','Fecha de análisis',...fields.map(f=>f.name)];
+  const rows = results.map(r => [r['__archivo__']||'',r['__fecha_analisis__']||'',...fields.map(f=>r[f.name]!=null?r[f.name]:'')]);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([headers,...rows]);
+  ws['!cols'] = headers.map((_,i)=>({wch:Math.min(Math.max(headers[i].length,...rows.map(r=>String(r[i]||'').length))+2,40)}));
+  XLSX.utils.book_append_sheet(wb,ws,'Rendiciones');
+  XLSX.writeFile(wb,`rendiciones_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function clearResults() {
+  if (!confirm('¿Borrar todos los resultados?')) return;
+  results = []; files = []; saveResults(); renderFileList(); renderRendResults();
+}
+
+// ── Microsoft Auth ─────────────────────────────────────
 async function initMsal() {
   if (msalInstance) return;
   try {
     msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
     await msalInstance.initialize();
     const accounts = msalInstance.getAllAccounts();
-    if (accounts.length) {
-      msAccount = accounts[0];
-      updateLoginBtn();
-    }
-  } catch(e) {
-    console.error('MSAL init error:', e);
-    msalInstance = null;
-    throw e;
-  }
+    if (accounts.length) { msAccount = accounts[0]; updateLoginBtn(); }
+  } catch(e) { msalInstance = null; throw e; }
 }
 
 function updateLoginBtn() {
   const btn = document.getElementById('msLoginBtn');
   if (!btn) return;
   if (msAccount) {
-    btn.textContent = '✅ ' + (msAccount.name || msAccount.username).split(' ')[0];
+    btn.textContent = '✅ ' + (msAccount.name||msAccount.username).split(' ')[0];
     btn.style.color = 'var(--green)';
     btn.style.borderColor = 'var(--green)';
   } else {
@@ -592,304 +587,93 @@ function updateLoginBtn() {
 
 async function toggleMsLogin() {
   await initMsal();
-  if (msAccount) {
-    msalInstance.logoutPopup();
-    msAccount = null;
-    updateLoginBtn();
-    return;
-  }
+  if (msAccount) { msalInstance.logoutPopup(); msAccount=null; updateLoginBtn(); return; }
   try {
     const resp = await msalInstance.loginPopup({ scopes: SCOPES });
-    msAccount = resp.account;
-    updateLoginBtn();
-  } catch(e) {
-    if (!e.message?.includes('cancelled')) alert('Error al iniciar sesión: ' + e.message);
-  }
+    msAccount = resp.account; updateLoginBtn();
+  } catch(e) { if(!e.message?.includes('cancelled')) alert('Error: '+e.message); }
 }
 
 async function getMsToken() {
   await initMsal();
-  if (!msAccount) {
-    await toggleMsLogin();
-    if (!msAccount) throw new Error('Necesitás iniciar sesión con Microsoft primero.');
-  }
-  const resp = await msalInstance.acquireTokenSilent({ scopes: SCOPES, account: msAccount })
-    .catch(() => msalInstance.acquireTokenPopup({ scopes: SCOPES, account: msAccount }));
+  if (!msAccount) { await toggleMsLogin(); if(!msAccount) throw new Error('Necesitás iniciar sesión con Microsoft primero.'); }
+  const resp = await msalInstance.acquireTokenSilent({scopes:SCOPES,account:msAccount}).catch(()=>msalInstance.acquireTokenPopup({scopes:SCOPES,account:msAccount}));
   return resp.accessToken;
 }
 
 async function getSiteId(token) {
-  // Intentar primero como /sites/NOMBRE
   const urls = [
     `https://graph.microsoft.com/v1.0/sites/${SHAREPOINT_HOST}:/sites/${SITE_NAME}`,
     `https://graph.microsoft.com/v1.0/sites/${SHAREPOINT_HOST}:/${SITE_NAME}`,
     `https://graph.microsoft.com/v1.0/sites/${SHAREPOINT_HOST}`,
   ];
   for (const url of urls) {
-    const resp = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
-    if (resp.ok) {
-      const data = await resp.json();
-      console.log('Site ID obtenido desde:', url, data.id);
-      return data.id;
-    }
-    console.log('Falló:', url, resp.status);
+    const resp = await fetch(url, {headers:{Authorization:'Bearer '+token}});
+    if (resp.ok) { const data=await resp.json(); return data.id; }
   }
-  throw new Error('No se pudo acceder al sitio de SharePoint. Verificá los permisos.');
+  throw new Error('No se pudo acceder al sitio de SharePoint.');
 }
 
-async function uploadToSharePoint(token, siteId, folderPath, fileName, content, isBase64 = false) {
+async function uploadToSharePoint(token, siteId, folderPath, fileName, content, isBase64=false) {
   const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
   const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}/${encodeURIComponent(fileName)}:/content`;
-  const body = isBase64
-    ? Uint8Array.from(atob(content), c => c.charCodeAt(0))
-    : new Blob([content], { type: 'application/json' });
-  const resp = await fetch(url, {
-    method: 'PUT',
-    headers: { Authorization: 'Bearer ' + token },
-    body
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.error?.message || 'HTTP ' + resp.status);
-  }
+  const body = isBase64 ? Uint8Array.from(atob(content),c=>c.charCodeAt(0)) : new Blob([content],{type:'application/json'});
+  const resp = await fetch(url, {method:'PUT',headers:{Authorization:'Bearer '+token},body});
+  if (!resp.ok) { const e=await resp.json().catch(()=>({})); throw new Error(e.error?.message||'HTTP '+resp.status); }
   return await resp.json();
 }
 
-async function sendToSharePoint(mode) {
+// ── SharePoint send (Rendiciones) ──────────────────────
+async function sendToSharePoint() {
   const btn = event.target;
   const original = btn.textContent;
   btn.textContent = '⏳ Conectando...';
   btn.disabled = true;
-
   try {
     const token = await getMsToken();
-    btn.textContent = '⏳ Obteniendo sitio...';
     const siteId = await getSiteId(token);
+    const fields = getRendFields().filter(f=>f.name.trim());
+    const timestamp = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
 
-    const fields = getFields().filter(f => f.name.trim());
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-
-    // 1. Subir comprobantes originales
-    const doneFiles = files.filter(f => f.status === 'done');
-    for (let i = 0; i < doneFiles.length; i++) {
-      const item = doneFiles[i];
-      btn.textContent = `⏳ Subiendo ${item.file.name}...`;
-      const b64 = await fileToBase64(item.file);
-      await uploadToSharePoint(token, siteId, COMPROBANTES_PATH, item.file.name, b64, true);
+    const doneFiles = files.filter(f=>f.status==='done');
+    for (let i=0; i<doneFiles.length; i++) {
+      btn.textContent = `⏳ Subiendo ${doneFiles[i].file.name}...`;
+      const b64 = await fileToBase64(doneFiles[i].file);
+      await uploadToSharePoint(token, siteId, REND_COMPROBANTES, doneFiles[i].file.name, b64, true);
     }
 
-    // 2. Subir JSON con los datos extraídos
     btn.textContent = '⏳ Guardando datos...';
     const payload = {
-      modo: mode,
-      fecha_envio: new Date().toLocaleString('es-AR'),
-      total_registros: results.length,
-      campos: fields.map(f => f.name),
+      modo: 'append', fecha_envio: new Date().toLocaleString('es-AR'),
+      campos: fields.map(f=>f.name),
       registros: results.map(r => {
-        const row = { archivo: r['__archivo__'] || '', fecha_analisis: r['__fecha_analisis__'] || '' };
-        fields.forEach(f => { row[f.name] = r[f.name] != null ? r[f.name] : ''; });
+        const row = {archivo:r['__archivo__']||'',fecha_analisis:r['__fecha_analisis__']||''};
+        fields.forEach(f=>{row[f.name]=r[f.name]!=null?r[f.name]:'';});
         return row;
       })
     };
-    const jsonFileName = `rendicion_${timestamp}.json`;
-    await uploadToSharePoint(token, siteId, FOLDER_PATH, jsonFileName, JSON.stringify(payload, null, 2));
-
-    alert(`✅ Listo!\n\n• ${doneFiles.length} comprobante(s) guardado(s) en SharePoint\n• Datos enviados para procesar en Excel\n\nPower Automate va a insertar las filas en unos segundos.`);
-
+    await uploadToSharePoint(token, siteId, REND_PENDIENTES, `rendicion_${timestamp}.json`, JSON.stringify(payload,null,2));
+    alert(`✅ Listo!\n• ${doneFiles.length} comprobante(s) guardados\n• Datos enviados para procesar en Excel`);
   } catch(e) {
-    alert('❌ Error: ' + e.message);
+    alert('❌ Error: '+e.message);
   } finally {
     btn.textContent = original;
     btn.disabled = false;
   }
 }
 
-function clearResults() {
-  if (!confirm('¿Borrar todos los resultados?')) return;
-  results = [];
-  saveResults();
-  renderResults();
-}
-
-// ── Admin panel ────────────────────────────────────────
-function renderAdmin() {
-  const el = document.getElementById('adminContent');
-  const pin = getPin();
-
-  if (!pin) {
-    el.innerHTML = `
-      <div class="card">
-        <div class="card-label">Primera vez — crear PIN de admin</div>
-        <label>Elegí un PIN (mínimo 4 dígitos)</label>
-        <input type="password" inputmode="numeric" id="newPin" placeholder="••••" maxlength="8" />
-        <div class="gap"></div>
-        <button class="btn btn-primary" onclick="createPin()">Crear PIN y entrar</button>
-      </div>`;
-    adminUnlocked = false;
-    return;
-  }
-
-  if (!adminUnlocked) {
-    el.innerHTML = `
-      <div class="locked-overlay">
-        <div class="lock-icon">🔒</div>
-        <p>Ingresá el PIN de admin para configurar la app</p>
-        <input type="password" inputmode="numeric" id="pinInput" placeholder="PIN" maxlength="8" style="max-width:200px;margin:0 auto 16px;text-align:center" onkeyup="if(event.key==='Enter')checkPin()" />
-        <button class="btn btn-primary" style="max-width:200px;margin:0 auto" onclick="checkPin()">Entrar</button>
-      </div>`;
-    return;
-  }
-
-  renderAdminUnlocked(el);
-}
-
-function createPin() {
-  const p = document.getElementById('newPin').value.trim();
-  if (p.length < 4) { alert('El PIN debe tener al menos 4 dígitos.'); return; }
-  savePin(p);
-  adminUnlocked = true;
-  renderAdmin();
-}
-
-function checkPin() {
-  const entered = document.getElementById('pinInput').value.trim();
-  if (entered === getPin()) { adminUnlocked = true; renderAdmin(); }
-  else { alert('PIN incorrecto'); }
-}
-
-function renderAdminUnlocked(el) {
-  const fields = getFields();
-  const fieldRows = fields.map((f, i) => `
-    <div class="field-row">
-      <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="updateField(${i},'name',this.value)" />
-      <input value="${esc(f.desc)}" placeholder="Descripción para la IA (opcional)" oninput="updateField(${i},'desc',this.value)" />
-      <div class="field-actions">
-        <button class="remove-btn" onclick="removeField(${i})">Eliminar</button>
-      </div>
-    </div>`).join('');
-
-  el.innerHTML = `
-    <div class="card">
-      <div class="card-label">API Key de Anthropic</div>
-      <label>Clave compartida del equipo</label>
-      <input type="password" id="apiKeyInput" value="${esc(getApiKey())}" placeholder="sk-ant-..." oninput="saveApiKey(this.value)" />
-      <p class="hint">Esta clave se guarda en el dispositivo. Solo visible para quien tenga el PIN.</p>
-    </div>
-
-    <div class="card">
-      <div class="card-label">Campos a extraer</div>
-      <div id="adminFieldList">${fieldRows}</div>
-      <button class="btn btn-secondary" onclick="addField()" style="margin-top:4px">+ Agregar campo</button>
-    </div>
-
-    <div class="card">
-      <div class="card-label">Integración SharePoint</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Los datos se suben directamente a SharePoint con tu cuenta Microsoft.</p>
-      <p class="hint">📁 Comprobantes → <strong>Operaciones y Mantenimiento/IA/Admin/Comprobantes</strong></p>
-      <p class="hint" style="margin-top:6px">📋 Datos JSON → <strong>Operaciones y Mantenimiento/IA/Admin/Pendientes</strong></p>
-      <div class="gap"></div>
-      <button class="btn btn-secondary" onclick="toggleMsLogin()">🔑 Iniciar sesión con Microsoft</button>
-    </div>
-
-    <div class="card">
-      <div class="card-label">Seguridad</div>
-      <label>Cambiar PIN de admin</label>
-      <input type="password" inputmode="numeric" id="newPinChange" placeholder="Nuevo PIN" maxlength="8" />
-      <div class="gap"></div>
-      <button class="btn btn-secondary" onclick="changePin()">Cambiar PIN</button>
-    </div>
-
-    <div class="gap"></div>
-    <button class="btn btn-secondary" onclick="adminUnlocked=false;renderAdmin()">🔒 Cerrar sesión admin</button>
-    <div class="gap"></div>`;
-}
-
-function updateField(i, key, val) {
-  const fields = getFields();
-  fields[i][key] = val;
-  saveFields(fields);
-}
-
-function addField() {
-  const fields = getFields();
-  fields.push({ name: '', desc: '' });
-  saveFields(fields);
-  renderAdmin();
-}
-
-function removeField(i) {
-  const fields = getFields();
-  fields.splice(i, 1);
-  saveFields(fields);
-  renderAdmin();
-}
-
-async function testWebhook() {
-  const url = document.getElementById('webhookInput').value.trim();
-  if (!url) { alert('Ingresá la URL del webhook primero.'); return; }
-  const status = document.getElementById('webhookStatus');
-  status.textContent = '⏳ Probando...';
-  try {
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test: true, mensaje: 'Prueba de conexión desde Rendiciones IA' })
-    });
-    if (resp.ok || resp.status === 202) {
-      status.textContent = '✅ Conectado correctamente';
-      status.style.color = 'var(--green)';
-    } else {
-      status.textContent = '⚠️ HTTP ' + resp.status;
-      status.style.color = 'var(--amber)';
-    }
-  } catch(e) {
-    status.textContent = '❌ Sin conexión';
-    status.style.color = 'var(--red)';
-  }
-}
-
-function changePin() {
-  const p = document.getElementById('newPinChange').value.trim();
-  if (p.length < 4) { alert('El PIN debe tener al menos 4 dígitos.'); return; }
-  savePin(p);
-  alert('PIN actualizado.');
-}
-
-// ── Utils ──────────────────────────────────────────────
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-// ── Compras/COMEX — Notas de Pedido ───────────────────
-const NP_FOLDER = 'Operaciones y Mantenimiento/IA/Compras-COMEX';
-const NP_REGISTRO = 'Operaciones y Mantenimiento/IA/Compras-COMEX/Registro NP prueba.xlsx';
-
-let npPdfB64 = null;
-let npExtractedData = null;
-
-function npShowStatus(id, type, msg) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.style.display = 'block';
-  const colors = { loading: 'var(--blue-bg)', error: 'var(--red-bg)', success: 'var(--green-bg)', warn: 'var(--amber-bg)' };
-  const textColors = { loading: 'var(--blue)', error: 'var(--red)', success: 'var(--green)', warn: 'var(--amber)' };
-  el.style.background = colors[type] || 'var(--surface2)';
-  el.style.color = textColors[type] || 'var(--text)';
-  el.style.padding = '10px 14px';
-  el.style.borderRadius = 'var(--radius-sm)';
-  el.innerHTML = type === 'loading' ? `⏳ ${msg}` : msg;
-}
-
+// ── Notas de Pedido ────────────────────────────────────
 function npHandlePDF(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
     npPdfB64 = e.target.result.split(',')[1];
-    document.getElementById('np-pdf-name').innerHTML = `<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid var(--green);border-radius:var(--radius-sm);padding:4px 12px;font-size:13px;color:var(--green);margin-top:8px">✓ ${file.name}</div>`;
+    document.getElementById('np-pdf-name').innerHTML = `<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid var(--green);border-radius:var(--radius-sm);padding:4px 12px;font-size:13px;color:var(--green);margin-top:8px">✓ ${esc(file.name)}</div>`;
     document.getElementById('np-extract-btn').disabled = false;
     document.getElementById('np-num1').className = 'step-num done';
     document.getElementById('np-num1').textContent = '✓';
-    document.getElementById('np-step2').style.opacity = '1';
-    document.getElementById('np-step2').style.pointerEvents = 'auto';
+    document.getElementById('np-step2').classList.remove('np-step-disabled');
     document.getElementById('np-num2').className = 'step-num active';
     if (msAccount) npCargarUltimoNP();
   };
@@ -900,254 +684,218 @@ async function npCargarUltimoNP() {
   try {
     const token = await getMsToken();
     const siteId = await getSiteId(token);
-    // Read the Excel file to get last NP
     const encodedPath = NP_REGISTRO.split('/').map(encodeURIComponent).join('/');
-    const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}:/content`;
-    const resp = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
-    if (!resp.ok) throw new Error('No se pudo leer el Registro NP');
-    const arrayBuffer = await resp.arrayBuffer();
-    const wb = XLSX.read(arrayBuffer, { type: 'array' });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
-    let ultimoNP = 0;
-    for (let i = 1; i < rows.length; i++) {
-      const val = rows[i][3]; // Col D = NP
-      if (val && !isNaN(parseInt(val))) {
-        ultimoNP = Math.max(ultimoNP, parseInt(val));
-      }
-    }
-    const input = document.getElementById('np-num-input');
-    input.value = ultimoNP + 1;
-    input.removeAttribute('readonly');
-    input.style.background = '';
-  } catch(e) {
-    console.log('No se pudo cargar último NP:', e.message);
-  }
+    const resp = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}:/content`,{headers:{Authorization:'Bearer '+token}});
+    if (!resp.ok) return;
+    const ab = await resp.arrayBuffer();
+    const wb = XLSX.read(ab,{type:'array'});
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+    let ultimo = 0;
+    for (let i=1;i<rows.length;i++) { const v=rows[i][3]; if(v&&!isNaN(parseInt(v))) ultimo=Math.max(ultimo,parseInt(v)); }
+    const inp = document.getElementById('np-num-input');
+    inp.value = ultimo+1; inp.removeAttribute('readonly'); inp.style.background='';
+  } catch(e) { console.log('No se pudo cargar último NP:',e.message); }
 }
 
 async function npExtractData() {
   if (!npPdfB64) return;
   const apiKey = getApiKey();
-  if (!apiKey) { alert('Configurá la API key de Claude en Admin.'); return; }
+  if (!apiKey) { alert('Configurá la API key en Admin.'); switchPanel('admin'); return; }
   const btn = document.getElementById('np-extract-btn');
-  btn.disabled = true;
-  btn.textContent = 'Procesando...';
+  btn.disabled = true; btn.textContent = 'Procesando...';
   document.getElementById('np-preview-area').innerHTML = '';
-  npShowStatus('np-status-bar', 'loading', 'Analizando PDF con IA...');
+  showMsg('np-status-bar','loading','Analizando PDF con IA...');
+
+  const npFields = getNpFields().filter(f=>f.name.trim());
+  const fieldDefs = npFields.map(f=>`  "${f.name}": ${f.name==='monto_total'?'número total sin símbolo':f.name==='items'?'array de items':'\"'+f.desc+'\"'}`).join(',\n');
 
   const prompt = `Analizá esta Proforma Invoice y extraé los datos en formato JSON. Devolvé SOLO el JSON, sin texto adicional ni backticks.
 {
-  "proveedor": "nombre completo del proveedor",
-  "atencion": "nombre del contacto o vendedor",
-  "telefono": "teléfono del proveedor",
-  "email": "email del proveedor",
-  "ref_no": "número de referencia de la proforma",
-  "fecha": "fecha en formato DD/MM/YYYY",
-  "moneda": "USD u otra moneda",
-  "monto_total": número total sin símbolo,
-  "plazo_pago": "condición de pago completa",
-  "plazo_entrega": "plazo o tiempo de entrega",
-  "incoterm": "incoterm completo con lugar",
-  "empresa_compradora": "nombre de la empresa compradora",
-  "items": [{"item": número, "cant": cantidad, "descripcion": "descripción completa", "p_unitario": precio, "p_total": precio}],
-  "observaciones": "notas relevantes en máx 200 caracteres"
+${fieldDefs},
+  "items": [{"item": número, "cant": cantidad, "descripcion": "descripción completa del producto", "p_unitario": precio unitario, "p_total": precio total}]
 }`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: [
-          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: npPdfB64 } },
-          { type: 'text', text: prompt }
-        ]}]
-      })
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:[
+        {type:'document',source:{type:'base64',media_type:'application/pdf',data:npPdfB64}},
+        {type:'text',text:prompt}
+      ]}]})
     });
-    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'HTTP ' + res.status); }
+    if (!res.ok) { const e=await res.json(); throw new Error(e.error?.message||'HTTP '+res.status); }
     const data = await res.json();
-    let text = data.content.map(b => b.text || '').join('');
-    npExtractedData = JSON.parse(text.replace(/```json|```/g,'').trim());
-    npShowStatus('np-status-bar', 'success', `✓ ${npExtractedData.items?.length || 0} ítems extraídos`);
+    npExtractedData = JSON.parse(data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
+    showMsg('np-status-bar','success',`✓ ${npExtractedData.items?.length||0} ítems extraídos`);
     npRenderPreview();
-    document.getElementById('np-num2').className = 'step-num done';
-    document.getElementById('np-num2').textContent = '✓';
-    document.getElementById('np-step3').style.opacity = '1';
-    document.getElementById('np-step3').style.pointerEvents = 'auto';
-    document.getElementById('np-num3').className = 'step-num active';
-    document.getElementById('np-btn-registro').disabled = false;
-    document.getElementById('np-btn-np').disabled = false;
+    document.getElementById('np-num2').className='step-num done'; document.getElementById('np-num2').textContent='✓';
+    document.getElementById('np-step3').classList.remove('np-step-disabled');
+    document.getElementById('np-num3').className='step-num active';
+    document.getElementById('np-btn-registro').disabled=false;
+    document.getElementById('np-btn-np').disabled=false;
   } catch(e) {
-    npShowStatus('np-status-bar', 'error', '✕ Error: ' + e.message);
+    showMsg('np-status-bar','error','✕ Error: '+e.message);
   } finally {
-    btn.textContent = '✦ Extraer datos del PDF con IA';
-    btn.disabled = false;
+    btn.textContent='✦ Extraer datos del PDF con IA'; btn.disabled=false;
   }
 }
 
 function npRenderPreview() {
   const d = npExtractedData;
-  const fmt = n => Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const itemRows = (d.items||[]).map(i => `
-    <div style="display:grid;grid-template-columns:32px 40px 1fr 70px 70px;gap:4px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">
+  const npFields = getNpFields().filter(f=>f.name.trim()&&f.name!=='items');
+  const fmt = n => Number(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  const fieldRows = npFields.map(f => `
+    <div class="np-preview-row">
+      <span class="k">${esc(f.name)}</span>
+      <input style="text-align:right;font-weight:600;font-size:12px;background:transparent;border:none;color:var(--text);font-family:inherit;max-width:60%;outline:none;padding:2px 4px;border-radius:4px" value="${esc(d[f.name]!=null?String(d[f.name]):'—')}" onfocus="this.style.background='var(--blue-bg)'" onblur="this.style.background='transparent'" oninput="npExtractedData['${f.name.replace(/'/g,"\\'")}'] = this.value" />
+    </div>`).join('');
+
+  const itemRows = (d.items||[]).map(i=>`
+    <div class="np-item-row">
       <span>${i.item}</span><span>${i.cant}</span>
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(i.descripcion)}">${esc(i.descripcion)}</span>
       <span style="text-align:right">${Number(i.p_unitario).toFixed(2)}</span>
       <span style="text-align:right">${Number(i.p_total).toFixed(2)}</span>
     </div>`).join('');
+
   document.getElementById('np-preview-area').innerHTML = `
-    <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;font-size:13px;margin-top:12px;border:1px solid var(--border)">
-      ${[['Proveedor',d.proveedor],['Referencia',d.ref_no],['Fecha',d.fecha],['Moneda',d.moneda],['Total',d.moneda+' '+fmt(d.monto_total)],['Incoterm',d.incoterm],['Plazo pago',d.plazo_pago],['Plazo entrega',d.plazo_entrega]].map(([k,v])=>`
-        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
-          <span style="color:var(--text2)">${k}</span><span style="font-weight:600;text-align:right;max-width:60%;font-size:12px">${esc(String(v||'—'))}</span>
-        </div>`).join('')}
-    </div>
-    <div style="margin-top:10px;overflow-x:auto">
-      <div style="display:grid;grid-template-columns:32px 40px 1fr 70px 70px;gap:4px;padding:4px 0;border-bottom:2px solid var(--border);font-size:11px;font-weight:600;color:var(--text2)">
-        <span>#</span><span>Cant</span><span>Descripción</span><span style="text-align:right">P.Unit</span><span style="text-align:right">P.Total</span>
-      </div>
+    <div class="np-preview">
+      ${fieldRows}
+      <div class="np-items-header"><span>#</span><span>Cant</span><span>Descripción</span><span style="text-align:right">P.Unit</span><span style="text-align:right">P.Total</span></div>
       ${itemRows}
     </div>`;
 }
 
 async function npInsertarFila() {
-  if (!npExtractedData) return;
   const btn = document.getElementById('np-btn-registro');
-  btn.disabled = true;
-  btn.textContent = '⏳ Insertando...';
-  npShowStatus('np-gen-status', 'loading', 'Leyendo y actualizando Registro NP en SharePoint...');
-
+  btn.disabled=true; btn.textContent='⏳ Insertando...';
+  showMsg('np-gen-status','loading','Leyendo y actualizando Registro NP...');
   try {
     const token = await getMsToken();
     const siteId = await getSiteId(token);
     const encodedPath = NP_REGISTRO.split('/').map(encodeURIComponent).join('/');
-
-    // 1. Download current Excel
-    const dlUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}:/content`;
-    const dlResp = await fetch(dlUrl, { headers: { Authorization: 'Bearer ' + token } });
+    const dlResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}:/content`,{headers:{Authorization:'Bearer '+token}});
     if (!dlResp.ok) throw new Error('No se pudo leer el Registro NP');
-    const arrayBuffer = await dlResp.arrayBuffer();
-    const wb = XLSX.read(arrayBuffer, { type: 'array' });
+    const ab = await dlResp.arrayBuffer();
+    const wb = XLSX.read(ab,{type:'array'});
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
-
-    // 2. Find first empty row (col D = NP)
-    let filaVacia = rows.length + 1;
-    for (let i = 1; i < rows.length + 1; i++) {
-      if (!rows[i] || !rows[i][3]) { filaVacia = i + 1; break; }
-    }
-
-    const hoy = today();
-    const npNum = parseInt(document.getElementById('np-num-input').value) || '';
-
-    // 3. Write data (1-indexed cols: A=0,B=1,C=2,D=3,E=4,F=5,G=6,H=7,I=8,J=9,L=11,M=12,N=13,O=14)
-    const r = filaVacia - 1; // 0-indexed for sheet_to_json rows
-    if (!rows[r]) rows[r] = [];
-    rows[r][2]  = hoy;                                                          // C - Fecha solicitud
-    rows[r][3]  = npNum;                                                        // D - NP Nº
-    rows[r][4]  = Number(npExtractedData.monto_total);                          // E - Monto
-    rows[r][5]  = npExtractedData.moneda;                                       // F - Moneda
-    rows[r][6]  = npExtractedData.plazo_pago;                                   // G - Plazo pago
-    rows[r][7]  = npExtractedData.empresa_compradora;                           // H - Empresa
-    rows[r][8]  = hoy;                                                          // I - Fecha NP
-    rows[r][9]  = npExtractedData.proveedor;                                    // J - Proveedor
-    rows[r][11] = document.getElementById('np-equip').value || npExtractedData.proveedor; // L - Equipos
-    rows[r][12] = npExtractedData.plazo_entrega;                                // M - Fecha compromiso
-    rows[r][13] = document.getElementById('np-obra').value;                     // N - Obra
-    rows[r][14] = document.getElementById('np-resp').value;                     // O - Responsable
-
-    // 4. Convert back to worksheet and upload
+    const rows = XLSX.utils.sheet_to_json(ws,{header:1});
+    let filaVacia = rows.length+1;
+    for (let i=1;i<rows.length+1;i++) { if(!rows[i]||!rows[i][3]){filaVacia=i+1;break;} }
+    const npNum = parseInt(document.getElementById('np-num-input').value)||'';
+    const r = filaVacia-1;
+    if (!rows[r]) rows[r]=[];
+    rows[r][2]  = today();
+    rows[r][3]  = npNum;
+    rows[r][4]  = Number(npExtractedData.monto_total);
+    rows[r][5]  = npExtractedData.moneda;
+    rows[r][6]  = npExtractedData.plazo_pago;
+    rows[r][7]  = npExtractedData.empresa_compradora;
+    rows[r][8]  = today();
+    rows[r][9]  = npExtractedData.proveedor;
+    rows[r][11] = document.getElementById('np-equip').value||npExtractedData.proveedor;
+    rows[r][12] = npExtractedData.plazo_entrega;
+    rows[r][13] = document.getElementById('np-obra').value;
+    rows[r][14] = document.getElementById('np-resp').value;
     const newWs = XLSX.utils.aoa_to_sheet(rows);
     wb.Sheets[wb.SheetNames[0]] = newWs;
-    const wbOut = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
-    const blob = new Uint8Array(wbOut);
-
-    const ulUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}:/content`;
-    const ulResp = await fetch(ulUrl, {
-      method: 'PUT',
-      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-      body: blob
-    });
-    if (!ulResp.ok) throw new Error('Error al guardar el Excel: HTTP ' + ulResp.status);
-
-    // 5. Also upload the PDF to Compras-COMEX folder
+    const wbOut = XLSX.write(wb,{type:'array',bookType:'xlsx'});
+    const ulResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}:/content`,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:new Uint8Array(wbOut)});
+    if (!ulResp.ok) throw new Error('Error al guardar: HTTP '+ulResp.status);
     if (npPdfB64) {
-      const pdfName = document.getElementById('np-pdf-input').files[0]?.name || `proforma_NP${npNum}.pdf`;
+      const pdfName = document.getElementById('np-pdf-input').files[0]?.name||`proforma_NP${npNum}.pdf`;
       await uploadToSharePoint(token, siteId, NP_FOLDER, pdfName, npPdfB64, true);
     }
-
-    npShowStatus('np-gen-status', 'success', `✓ Fila ${filaVacia} insertada en Registro NP — NP Nº ${npNum}`);
-    btn.textContent = '✓ Fila insertada';
+    showMsg('np-gen-status','success',`✓ Fila ${filaVacia} insertada — NP Nº ${npNum}`);
+    btn.textContent='✓ Fila insertada';
   } catch(e) {
-    npShowStatus('np-gen-status', 'error', '✕ Error: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = '☁️ Insertar fila en Registro NP (SharePoint)';
+    showMsg('np-gen-status','error','✕ Error: '+e.message);
+    btn.disabled=false; btn.textContent='☁️ Insertar fila en Registro NP';
   }
-}
-
-function today() {
-  const d = new Date();
-  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
 }
 
 function npGenerateNP() {
   const d = npExtractedData;
   if (!d) return;
-  const npNum  = document.getElementById('np-num-input').value;
-  const impNum = document.getElementById('np-imp-num').value;
-  const wb = XLSX.utils.book_new();
-  const ws = {};
-  const s = (cell, val, bold) => {
-    ws[cell] = { v: val, t: typeof val === 'number' ? 'n' : 's' };
-    if (bold) ws[cell].s = { font: { bold: true } };
-  };
-  s('C1','PROVEEDOR: ',true);  s('D1',`NOTA DE PEDIDO Nº  ${npNum||''}`,true);
-  s('C2', d.proveedor);         s('D2',`IMP  ${impNum||''}`,true);
-  s('C3','Atención: ');         s('D3', d.atencion||'');
-  s('C4','Teléfono:');          s('D4','FECHA:');  s('E4', today());
-  s('C5', d.telefono||'');      s('D5','MONEDA:'); s('E5', d.moneda);
-  s('C6','e-mail:');            s('D6', d.email||'');
+  const npNum=document.getElementById('np-num-input').value;
+  const impNum=document.getElementById('np-imp-num').value;
+  const wb=XLSX.utils.book_new(); const ws={};
+  const s=(cell,val,bold)=>{ws[cell]={v:val,t:typeof val==='number'?'n':'s'};if(bold)ws[cell].s={font:{bold:true}};};
+  s('C1','PROVEEDOR: ',true); s('D1',`NOTA DE PEDIDO Nº  ${npNum||''}`,true);
+  s('C2',d.proveedor); s('D2',`IMP  ${impNum||''}`,true);
+  s('C3','Atención: '); s('D3',d.atencion||'');
+  s('C4','Teléfono:'); s('D4','FECHA:'); s('E4',today());
+  s('C5',d.telefono||''); s('D5','MONEDA:'); s('E5',d.moneda);
+  s('C6','e-mail:'); s('D6',d.email||'');
   s('A7','ITEM',true); s('B7','CANT.',true); s('C7','DESCRIPCION',true); s('D7','P.UNITARIO',true); s('E7','P.TOTAL',true);
-  let row = 8;
-  for (const it of (d.items||[])) {
-    ws[`A${row}`]={v:it.item,t:'n'};
-    ws[`B${row}`]={v:it.cant,t:'n'};
-    ws[`C${row}`]={v:it.descripcion,t:'s'};
-    ws[`D${row}`]={v:Number(it.p_unitario),t:'n'};
-    ws[`E${row}`]={v:Number(it.p_total),t:'n'};
-    row++;
-  }
+  let row=8;
+  for(const it of(d.items||[])){ws[`A${row}`]={v:it.item,t:'n'};ws[`B${row}`]={v:it.cant,t:'n'};ws[`C${row}`]={v:it.descripcion,t:'s'};ws[`D${row}`]={v:Number(it.p_unitario),t:'n'};ws[`E${row}`]={v:Number(it.p_total),t:'n'};row++;}
   const sr=row+1;
-  s(`C${sr}`,'                                       SUB-TOTAL');
-  ws[`E${sr}`]={v:Number(d.monto_total),t:'n'};
-  s(`C${sr+1}`,'                                      TOTAL');
-  ws[`E${sr+1}`]={v:Number(d.monto_total),t:'n'};
+  s(`C${sr}`,'                                       SUB-TOTAL'); ws[`E${sr}`]={v:Number(d.monto_total),t:'n'};
+  s(`C${sr+1}`,'                                      TOTAL'); ws[`E${sr+1}`]={v:Number(d.monto_total),t:'n'};
   const pr=sr+3; s(`A${pr}`,'Payment terms',true); s(`B${pr}`,d.plazo_pago);
   const plr=pr+2; s(`A${plr}`,'Plazo de Entrega:',true); s(`B${plr}`,d.plazo_entrega);
   const ir=plr+2; s(`A${ir}`,'Incoterm',true); s(`B${ir}`,d.incoterm);
   const or2=ir+2; s(`A${or2}`,'Observaciones:'); s(`B${or2}`,d.observaciones||'');
-  ws['!ref']=`A1:E${or2+4}`;
-  ws['!cols']=[{wch:6},{wch:8},{wch:55},{wch:14},{wch:14}];
-  XLSX.utils.book_append_sheet(wb, ws, 'Hoja1');
-  XLSX.writeFile(wb, `NP_${npNum||'nueva'}_IMP_${impNum||''}_${(d.proveedor||'').split(' ')[0]}.xlsx`);
-  npShowStatus('np-gen-status', 'success', '✓ Nota de Pedido descargada correctamente');
+  ws['!ref']=`A1:E${or2+4}`; ws['!cols']=[{wch:6},{wch:8},{wch:55},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws,'Hoja1');
+  XLSX.writeFile(wb,`NP_${npNum||'nueva'}_IMP_${impNum||''}_${(d.proveedor||'').split(' ')[0]}.xlsx`);
+  showMsg('np-gen-status','success','✓ Nota de Pedido descargada');
 }
 
-// ── Service Worker registration ────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+// ── Admin panel ────────────────────────────────────────
+function renderAdmin() {
+  const el = document.getElementById('adminContent');
+  const pin = getPin();
+  if (!pin) {
+    el.innerHTML=`<div class="card"><div class="card-label">Primera vez — crear PIN de admin</div><label>Elegí un PIN (mínimo 4 dígitos)</label><input type="password" inputmode="numeric" id="newPin" placeholder="••••" maxlength="8" /><div class="gap"></div><button class="btn btn-primary" onclick="createPin()">Crear PIN y entrar</button></div>`;
+    adminUnlocked=false; return;
+  }
+  if (!adminUnlocked) {
+    el.innerHTML=`<div class="locked-overlay"><div style="font-size:48px;margin-bottom:12px">🔒</div><p style="color:var(--text2);font-size:14px;margin-bottom:20px">Ingresá el PIN de admin</p><input type="password" inputmode="numeric" id="pinInput" placeholder="PIN" maxlength="8" style="max-width:200px;margin:0 auto 16px;text-align:center" onkeyup="if(event.key==='Enter')checkPin()" /><button class="btn btn-primary" style="max-width:200px;margin:0 auto" onclick="checkPin()">Entrar</button></div>`;
+    return;
+  }
+  el.innerHTML=`
+    <div class="card">
+      <div class="card-label">API Key de Anthropic (Claude)</div>
+      <label>Clave compartida del equipo</label>
+      <input type="password" id="apiKeyInput" value="${esc(getApiKey())}" placeholder="sk-ant-..." oninput="saveApiKey(this.value)" />
+      <p class="hint">Se guarda en el dispositivo. Solo visible con el PIN.</p>
+    </div>
+    <div class="card">
+      <div class="card-label">Integración SharePoint</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Los archivos se suben con tu cuenta Microsoft.</p>
+      <p class="hint">📁 Comprobantes → <strong>Admin/Comprobantes</strong></p>
+      <p class="hint" style="margin-top:4px">📋 Datos → <strong>Admin/Pendientes</strong></p>
+      <p class="hint" style="margin-top:4px">📄 Proformas NP → <strong>Compras-COMEX</strong></p>
+      <div class="gap"></div>
+      <button class="btn btn-secondary" onclick="toggleMsLogin()">🔑 Iniciar sesión con Microsoft</button>
+    </div>
+    <div class="card">
+      <div class="card-label">Seguridad</div>
+      <label>Cambiar PIN de admin</label>
+      <input type="password" inputmode="numeric" id="newPinChange" placeholder="Nuevo PIN" maxlength="8" />
+      <div class="gap"></div>
+      <button class="btn btn-secondary" onclick="changePin()">Cambiar PIN</button>
+    </div>
+    <div class="gap"></div>
+    <button class="btn btn-secondary" onclick="adminUnlocked=false;renderAdmin()">🔒 Cerrar sesión admin</button>
+    <div class="gap"></div>`;
 }
 
-// Update analyze button state on load
+function createPin() { const p=document.getElementById('newPin').value.trim(); if(p.length<4){alert('Mínimo 4 dígitos.');return;} savePin(p); adminUnlocked=true; renderAdmin(); }
+function checkPin() { if(document.getElementById('pinInput').value.trim()===getPin()){adminUnlocked=true;renderAdmin();}else{alert('PIN incorrecto');} }
+function changePin() { const p=document.getElementById('newPinChange').value.trim(); if(p.length<4){alert('Mínimo 4 dígitos.');return;} savePin(p); alert('PIN actualizado.'); }
+
+// ── Init ───────────────────────────────────────────────
 document.getElementById('analyzeBtn').disabled = !getApiKey();
-initMsal().catch(() => {});
+initMsal().catch(()=>{});
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
