@@ -820,30 +820,30 @@ async function spConfirm() {
     const doneFiles = files.filter(f => f.status === 'done');
 
     // Upload comprobantes
+    const compSite = spDefaults.comprobantesS || siteId;
     for (let i = 0; i < doneFiles.length; i++) {
       btn.textContent = `⏳ Subiendo ${doneFiles[i].file.name}...`;
       const b64 = await fileToBase64(doneFiles[i].file);
-      // Use item ID if available, otherwise path
       let uploadUrl;
       if (spDefaults.comprobantesId) {
-        uploadUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${spDefaults.comprobantesId}:/${encodeURIComponent(doneFiles[i].file.name)}:/content`;
+        uploadUrl = `https://graph.microsoft.com/v1.0/sites/${compSite}/drive/items/${spDefaults.comprobantesId}:/${encodeURIComponent(doneFiles[i].file.name)}:/content`;
       } else {
         const ep = (spDefaults.comprobantesFolder||REND_COMPROBANTES).split('/').map(encodeURIComponent).join('/');
-        uploadUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${ep}/${encodeURIComponent(doneFiles[i].file.name)}:/content`;
+        uploadUrl = `https://graph.microsoft.com/v1.0/sites/${compSite}/drive/root:/${ep}/${encodeURIComponent(doneFiles[i].file.name)}:/content`;
       }
-      const fileContent = b64 ? Uint8Array.from(atob(b64),c=>c.charCodeAt(0)) : new Blob([]);
-      await fetch(uploadUrl, {method:'PUT', headers:{Authorization:'Bearer '+token}, body: fileContent});
+      await fetch(uploadUrl, {method:'PUT', headers:{Authorization:'Bearer '+token}, body: Uint8Array.from(atob(b64),c=>c.charCodeAt(0))});
     }
 
     if (spMode === 'existing') {
       btn.textContent = '⏳ Actualizando Excel...';
       // Use item ID if available
+      const excelSite = spDefaults.excelS || siteId;
       let dlResp;
       if (spDefaults.excelId) {
-        dlResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${spDefaults.excelId}/content`, {headers:{Authorization:'Bearer '+token}});
+        dlResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/items/${spDefaults.excelId}/content`, {headers:{Authorization:'Bearer '+token}});
       } else {
         const encodedPath = (spDefaults.excelPath||'').split('/').map(encodeURIComponent).join('/');
-        dlResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}:/content`, {headers:{Authorization:'Bearer '+token}});
+        dlResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/root:/${encodedPath}:/content`, {headers:{Authorization:'Bearer '+token}});
       }
       if (!dlResp.ok) throw new Error('No se pudo leer el Excel destino');
       const ab = await dlResp.arrayBuffer();
@@ -876,10 +876,10 @@ async function spConfirm() {
       // Re-upload to same location
       let ulUrl;
       if (spDefaults.excelId) {
-        ulUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${spDefaults.excelId}/content`;
+        ulUrl = `https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/items/${spDefaults.excelId}/content`;
       } else {
         const ep2 = (spDefaults.excelPath||'').split('/').map(encodeURIComponent).join('/');
-        ulUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${ep2}:/content`;
+        ulUrl = `https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/root:/${ep2}:/content`;
       }
       await fetch(ulUrl, {method:'PUT', headers:{Authorization:'Bearer '+token,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}, body:new Uint8Array(wbOut)});
 
@@ -893,12 +893,13 @@ async function spConfirm() {
       XLSX.utils.book_append_sheet(wb2,ws2,'Rendiciones');
       const wbOut2 = XLSX.write(wb2,{type:'array',bookType:'xlsx'});
       const fileName = `rendiciones_${new Date().toISOString().slice(0,10)}.xlsx`;
+      const newSite = spDefaults.newFolderS || siteId;
       let newUrl;
       if (spDefaults.newFolderId) {
-        newUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${spDefaults.newFolderId}:/${encodeURIComponent(fileName)}:/content`;
+        newUrl = `https://graph.microsoft.com/v1.0/sites/${newSite}/drive/items/${spDefaults.newFolderId}:/${encodeURIComponent(fileName)}:/content`;
       } else {
         const ef = (spDefaults.newFolder||REND_PENDIENTES).split('/').map(encodeURIComponent).join('/');
-        newUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${ef}/${encodeURIComponent(fileName)}:/content`;
+        newUrl = `https://graph.microsoft.com/v1.0/sites/${newSite}/drive/root:/${ef}/${encodeURIComponent(fileName)}:/content`;
       }
       await fetch(newUrl, {method:'PUT', headers:{Authorization:'Bearer '+token,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}, body:new Uint8Array(wbOut2)});
     }
@@ -915,86 +916,131 @@ async function spConfirm() {
 }
 
 // ── File Browser ───────────────────────────────────────
+// ── File Browser — multi-site ─────────────────────────
+let fbCurrentSiteId = null;
+let fbCurrentSiteName = null;
+let fbLevel = 'sites'; // 'sites' | 'files'
+
 async function fbOpen(mode, target) {
   fbMode = mode;
   fbTarget = target;
   fbStack = [];
+  fbLevel = 'sites';
+  fbCurrentSiteId = null;
   document.getElementById('fb-title').textContent = mode === 'file' ? 'Seleccionar archivo Excel' : 'Seleccionar carpeta';
-  document.getElementById('fb-select-btn').style.display = mode === 'folder' ? 'flex' : 'none';
+  document.getElementById('fb-select-btn').style.display = 'none'; // hidden at site level
   document.getElementById('fbOverlay').classList.remove('hidden');
-  await fbLoad(null, 'Documentos compartidos', '');
+  await fbLoadSites();
 }
 
 function fbClose() {
   document.getElementById('fbOverlay').classList.add('hidden');
 }
 
-async function fbLoad(itemId, name, path) {
+async function fbLoadSites() {
   const listEl = document.getElementById('fb-list');
-  listEl.innerHTML = '<div class="fb-loading">⏳ Cargando...</div>';
-  document.getElementById('fb-breadcrumb').textContent = path || 'Raíz';
-
+  listEl.innerHTML = '<div class="fb-loading">⏳ Cargando sitios...</div>';
+  document.getElementById('fb-breadcrumb').textContent = 'Elegí un sitio de SharePoint';
+  document.getElementById('fb-select-btn').style.display = 'none';
   try {
     const token = await getMsToken();
-    const siteId = await getSiteId(token);
-    let url;
-    if (itemId) {
-      url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${itemId}/children`;
-    } else {
-      url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root/children`;
-    }
-    const resp = await fetch(url, {headers:{Authorization:'Bearer '+token}});
-    if (!resp.ok) {
-      // Fallback: try root drive
-      const fallback = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root/children`, {headers:{Authorization:'Bearer '+token}});
-      if (!fallback.ok) throw new Error('HTTP ' + resp.status);
-      const fd = await fallback.json();
-      fbCurrentItems = (fd.value||[]).filter(item=>{
-        if(fbMode==='folder') return !!item.folder;
-        if(fbMode==='file') return !!item.folder||(item.name?.endsWith('.xlsx')||item.name?.endsWith('.xls'));
-        return true;
-      }).sort((a,b)=>{if(a.folder&&!b.folder)return -1;if(!a.folder&&b.folder)return 1;return a.name.localeCompare(b.name);});
-      document.getElementById('fb-breadcrumb').textContent = 'Raíz';
-      document.getElementById('fb-select-btn').dataset.path = '';
-      document.getElementById('fb-select-btn').dataset.name = 'Raíz';
-      document.getElementById('fb-select-btn').dataset.id = '';
-      if(!fbCurrentItems.length){listEl.innerHTML='<div class="fb-loading">Carpeta vacía</div>';return;}
-      listEl.innerHTML = fbCurrentItems.map((item,i)=>{const isF=!!item.folder;return`<div class="fb-item" onclick="fbItemClick(${i})"><span class="fb-item-icon">${isF?'📁':'📊'}</span><span class="fb-item-name">${esc(item.name)}</span><span class="fb-item-arrow">${isF?'›':(fbMode==='file'?'✓':'')}</span></div>`;}).join('');
-      return;
-    }
+    // Get followed sites + search for all sites
+    const resp = await fetch(
+      'https://graph.microsoft.com/v1.0/sites?search=*&$select=id,displayName,name,webUrl',
+      {headers:{Authorization:'Bearer '+token}}
+    );
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
+    const sites = (data.value||[]).filter(s => s.displayName && s.name !== 'root');
+    if (!sites.length) throw new Error('No se encontraron sitios');
+    fbCurrentItems = sites;
+    listEl.innerHTML = sites.map((s,i) => `
+      <div class="fb-item" onclick="fbSelectSite(${i})">
+        <span class="fb-item-icon">🏢</span>
+        <span class="fb-item-name">${esc(s.displayName)}<br><span style="font-size:11px;color:var(--text3)">${esc(s.name)}</span></span>
+        <span class="fb-item-arrow">›</span>
+      </div>`).join('');
+  } catch(e) {
+    // Fallback: show known sites manually
+    const knownSites = [
+      {id: null, displayName: 'Aeration Servicios (as)', name: 'as', _host: 'aerationargentina.sharepoint.com', _site: 'as'},
+      {id: null, displayName: 'Compras/COMEX (cyc)', name: 'cyc', _host: 'aerationargentina.sharepoint.com', _site: 'cyc'},
+    ];
+    fbCurrentItems = knownSites;
+    listEl.innerHTML = knownSites.map((s,i) => `
+      <div class="fb-item" onclick="fbSelectSite(${i})">
+        <span class="fb-item-icon">🏢</span>
+        <span class="fb-item-name">${esc(s.displayName)}</span>
+        <span class="fb-item-arrow">›</span>
+      </div>`).join('');
+    listEl.innerHTML += `<div style="padding:10px 16px;font-size:12px;color:var(--text3)">No se pudieron cargar todos los sitios automáticamente.</div>`;
+  }
+}
 
-    fbCurrentItems = (data.value || []).filter(item => {
-      if (fbMode === 'folder') return !!item.folder;
-      if (fbMode === 'file') return !!item.folder || (item.name?.endsWith('.xlsx') || item.name?.endsWith('.xls'));
+async function fbSelectSite(idx) {
+  const site = fbCurrentItems[idx];
+  const listEl = document.getElementById('fb-list');
+  listEl.innerHTML = '<div class="fb-loading">⏳ Abriendo sitio...</div>';
+  try {
+    const token = await getMsToken();
+    let siteId = site.id;
+    if (!siteId) {
+      // Resolve by name
+      const host = site._host || SHAREPOINT_HOST;
+      const resp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${host}:/sites/${site._site||site.name}`,
+        {headers:{Authorization:'Bearer '+token}}
+      );
+      if (!resp.ok) throw new Error('No se pudo acceder al sitio');
+      const data = await resp.json();
+      siteId = data.id;
+    }
+    fbCurrentSiteId = siteId;
+    fbCurrentSiteName = site.displayName;
+    fbLevel = 'files';
+    fbStack = [{type:'sites', label:'Sitios'}];
+    await fbLoadFolder(null, '', site.displayName);
+  } catch(e) {
+    listEl.innerHTML = `<div class="fb-loading">❌ ${esc(e.message)}</div>`;
+  }
+}
+
+async function fbLoadFolder(itemId, path, label) {
+  const listEl = document.getElementById('fb-list');
+  listEl.innerHTML = '<div class="fb-loading">⏳ Cargando...</div>';
+  document.getElementById('fb-breadcrumb').textContent = (fbCurrentSiteName||'') + (path ? ' › ' + path.replace(/\//g,' › ') : '');
+  document.getElementById('fb-select-btn').style.display = fbMode === 'folder' ? 'flex' : 'none';
+  try {
+    const token = await getMsToken();
+    const url = itemId
+      ? `https://graph.microsoft.com/v1.0/sites/${fbCurrentSiteId}/drive/items/${itemId}/children`
+      : `https://graph.microsoft.com/v1.0/sites/${fbCurrentSiteId}/drive/root/children`;
+    const resp = await fetch(url, {headers:{Authorization:'Bearer '+token}});
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    fbCurrentItems = (data.value||[]).filter(item => {
+      if (fbMode==='folder') return !!item.folder;
+      if (fbMode==='file') return !!item.folder || item.name?.match(/\.xlsx?$/i);
       return true;
     }).sort((a,b) => {
       if (a.folder && !b.folder) return -1;
       if (!a.folder && b.folder) return 1;
       return a.name.localeCompare(b.name);
     });
-
     if (!fbCurrentItems.length) {
       listEl.innerHTML = '<div class="fb-loading">Carpeta vacía</div>';
-      return;
+    } else {
+      listEl.innerHTML = fbCurrentItems.map((item,i) => {
+        const isF = !!item.folder;
+        return `<div class="fb-item" onclick="fbItemClick(${i})">
+          <span class="fb-item-icon">${isF?'📁':'📊'}</span>
+          <span class="fb-item-name">${esc(item.name)}</span>
+          <span class="fb-item-arrow">${isF?'›':(fbMode==='file'?'✓':'')}</span>
+        </div>`;
+      }).join('');
     }
-
-    listEl.innerHTML = fbCurrentItems.map((item, i) => {
-      const isFolder = !!item.folder;
-      const icon = isFolder ? '📁' : '📊';
-      const arrow = isFolder ? '›' : (fbMode==='file' ? '✓' : '');
-      return `<div class="fb-item" onclick="fbItemClick(${i})">
-        <span class="fb-item-icon">${icon}</span>
-        <span class="fb-item-name">${esc(item.name)}</span>
-        <span class="fb-item-arrow">${arrow}</span>
-      </div>`;
-    }).join('');
-
-    // Update current path info
     document.getElementById('fb-select-btn').dataset.path = path;
-    document.getElementById('fb-select-btn').dataset.name = name;
     document.getElementById('fb-select-btn').dataset.id = itemId || '';
-
   } catch(e) {
     listEl.innerHTML = `<div class="fb-loading">❌ Error: ${esc(e.message)}</div>`;
   }
@@ -1003,39 +1049,48 @@ async function fbLoad(itemId, name, path) {
 async function fbItemClick(idx) {
   const item = fbCurrentItems[idx];
   if (!item) return;
+  if (fbLevel === 'sites') { await fbSelectSite(idx); return; }
   const isFolder = !!item.folder;
   const currentPath = document.getElementById('fb-select-btn').dataset.path || '';
   const newPath = currentPath ? currentPath + '/' + item.name : item.name;
-
   if (isFolder) {
-    fbStack.push({ id: document.getElementById('fb-select-btn').dataset.id, name: document.getElementById('fb-select-btn').dataset.name, path: currentPath });
-    await fbLoad(item.id, item.name, newPath);
+    fbStack.push({type:'folder', id: document.getElementById('fb-select-btn').dataset.id, path: currentPath});
+    await fbLoadFolder(item.id, newPath, item.name);
   } else if (fbMode === 'file') {
     fbSelectFile(item, newPath);
   }
 }
 
 async function fbBack() {
-  if (fbStack.length === 0) { fbClose(); return; }
+  if (!fbStack.length) { fbClose(); return; }
   const prev = fbStack.pop();
-  await fbLoad(prev.id || null, prev.name, prev.path);
+  if (prev.type === 'sites') {
+    fbLevel = 'sites';
+    fbCurrentSiteId = null;
+    await fbLoadSites();
+  } else {
+    await fbLoadFolder(prev.id || null, prev.path, '');
+  }
 }
 
 function fbSelectCurrent() {
   const btn = document.getElementById('fb-select-btn');
   const path = btn.dataset.path;
   const itemId = btn.dataset.id;
-  const label = path || 'Raíz';
+  const siteName = fbCurrentSiteName || '';
+  const label = siteName + (path ? ' › ' + path.replace(/\//g,' › ') : '');
 
   if (fbTarget === 'comprobantes') {
     spDefaults.comprobantesFolder = path;
     spDefaults.comprobantesLabel = label;
     spDefaults.comprobantesId = itemId;
+    spDefaults.comprobantesS = fbCurrentSiteId;
     document.getElementById('sp-folder-label').textContent = label;
   } else if (fbTarget === 'newfolder') {
     spDefaults.newFolder = path;
     spDefaults.newFolderLabel = label;
     spDefaults.newFolderId = itemId;
+    spDefaults.newFolderS = fbCurrentSiteId;
     document.getElementById('sp-newfolder-label').textContent = label;
   }
   saveSpDefaults(spDefaults);
@@ -1046,6 +1101,7 @@ function fbSelectFile(item, relativePath) {
   if (fbTarget === 'excel') {
     spDefaults.excelPath = relativePath;
     spDefaults.excelId = item.id;
+    spDefaults.excelS = fbCurrentSiteId;
     spDefaults.excelLabel = item.name;
     document.getElementById('sp-excel-label').textContent = item.name;
   }
