@@ -223,15 +223,15 @@
       <div class="card">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <div class="step-num active" id="np-num1">1</div>
-          <div><div style="font-size:15px;font-weight:600">Subir PDF de Proforma</div><div style="font-size:12px;color:var(--text2)">Proforma Invoice del proveedor</div></div>
+          <div><div style="font-size:15px;font-weight:600">Subir archivos de Proforma</div><div style="font-size:12px;color:var(--text2)">PDF, JPG, PNG — podés subir varios</div></div>
         </div>
-        <div class="drop-zone" onclick="document.getElementById('np-pdf-input').click()">
+        <div class="drop-zone" id="npDropZone" onclick="document.getElementById('np-file-input').click()">
           <div class="drop-icon">📄</div>
-          <p>Tocá para seleccionar el PDF</p>
-          <span>Solo PDF</span>
+          <p>Tocá para seleccionar archivos</p>
+          <span>PDF, JPG, JPEG, PNG</span>
         </div>
-        <input type="file" id="np-pdf-input" accept=".pdf" style="display:none" onchange="npHandlePDF(this)" />
-        <div id="np-pdf-name"></div>
+        <input type="file" id="np-file-input" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none" onchange="npHandleFiles(this.files)" />
+        <div id="np-file-list"></div>
       </div>
       <!-- Paso 2 -->
       <div class="card np-step-disabled" id="np-step2">
@@ -240,17 +240,9 @@
           <div><div style="font-size:15px;font-weight:600">Datos del Registro NP</div><div style="font-size:12px;color:var(--text2)">Completá los campos manuales y extraé con IA</div></div>
         </div>
         <div class="card-label">Campos manuales</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-          <div><label>NP Nº (automático)</label><input type="number" id="np-num-input" placeholder="Cargando..." readonly /></div>
-          <div><label>IMP Nº</label><input type="number" id="np-imp-num" placeholder="ej: 1544" /></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-          <div><label>Obra / Cliente</label><input type="text" id="np-obra" placeholder="ej: San Sebastián" /></div>
-          <div><label>Responsable</label><input type="text" id="np-resp" placeholder="ej: FP" /></div>
-        </div>
-        <div style="margin-bottom:14px"><label>Equipos / Servicios</label><input type="text" id="np-equip" placeholder="ej: BOMBAS TSURUMI" /></div>
-        <div class="card-label">Extracción con IA</div>
-        <button class="btn btn-primary" id="np-extract-btn" onclick="npExtractData()" disabled>✦ Extraer datos del PDF con IA</button>
+        <div id="np-manual-fields-inputs"></div>
+        <div class="card-label" style="margin-top:14px">Extracción con IA</div>
+        <button class="btn btn-primary" id="np-extract-btn" onclick="npExtractAll()" disabled>✦ Extraer datos con IA</button>
         <div id="np-status-bar"></div>
         <div id="np-preview-area"></div>
       </div>
@@ -258,10 +250,10 @@
       <div class="card np-step-disabled" id="np-step3">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <div class="step-num" id="np-num3">3</div>
-          <div><div style="font-size:15px;font-weight:600">Generar archivos</div><div style="font-size:12px;color:var(--text2)">Insertá la fila y descargá la Nota de Pedido</div></div>
+          <div><div style="font-size:15px;font-weight:600">Guardar</div><div style="font-size:12px;color:var(--text2)">Insertá filas y descargá las Notas de Pedido</div></div>
         </div>
-        <button class="btn btn-primary" id="np-btn-registro" onclick="npInsertarFila()" disabled style="margin-bottom:8px">☁️ Insertar fila en Registro NP</button>
-        <button class="btn btn-secondary" id="np-btn-np" onclick="npGenerateNP()" disabled>📄 Descargar Nota de Pedido (.xlsx)</button>
+        <button class="btn btn-primary" id="np-btn-registro" onclick="npShowModal()" disabled style="margin-bottom:8px">☁️ Guardar en SharePoint</button>
+        <button class="btn btn-secondary" id="np-btn-np" onclick="npGenerateAllNP()" disabled>📄 Descargar Notas de Pedido (.xlsx)</button>
         <div id="np-gen-status"></div>
       </div>
     </div>
@@ -269,21 +261,33 @@
     <!-- ═══ PANEL: Config Rendiciones ═══ -->
     <div class="panel" id="panel-cfg-rend">
       <div class="card">
-        <div class="card-label">Campos a extraer — Rendiciones</div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Definí qué información debe extraer la IA de cada comprobante.</p>
+        <div class="card-label">Campos que extrae la IA — Rendiciones</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">La IA extrae estos campos de cada comprobante.</p>
         <div id="rendFieldList"></div>
-        <button class="btn btn-secondary" onclick="rendAddField()" style="margin-top:4px">+ Agregar campo</button>
+        <button class="btn btn-secondary" onclick="rendAddField()" style="margin-top:4px">+ Agregar campo IA</button>
+      </div>
+      <div class="card">
+        <div class="card-label">Campos manuales — Rendiciones</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">El usuario completa estos campos una vez y se aplican a todos los comprobantes de la sesión.</p>
+        <div id="rendManualFieldList"></div>
+        <button class="btn btn-secondary" onclick="rendAddManualField()" style="margin-top:4px">+ Agregar campo manual</button>
       </div>
     </div>
 
     <!-- ═══ PANEL: Config NP ═══ -->
     <div class="panel" id="panel-cfg-np">
       <div class="card">
-        <div class="card-label">Campos a extraer — Notas de Pedido</div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Estos campos se extraen automáticamente de la Proforma Invoice.</p>
+        <div class="card-label">Campos que extrae la IA — Notas de Pedido</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Estos campos se extraen automáticamente de la Proforma.</p>
         <div id="npFieldList"></div>
-        <button class="btn btn-secondary" onclick="npAddField()" style="margin-top:4px">+ Agregar campo</button>
-        <p class="hint" style="margin-top:10px">Los campos manuales (NP Nº, IMP Nº, Obra, Responsable, Equipos) siempre aparecen y no se configuran acá.</p>
+        <button class="btn btn-secondary" onclick="npAddField()" style="margin-top:4px">+ Agregar campo IA</button>
+      </div>
+      <div class="card">
+        <div class="card-label">Campos manuales — Notas de Pedido</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">El usuario completa estos campos una vez y se aplican a todos los archivos de la sesión.</p>
+        <div id="npManualFieldList"></div>
+        <button class="btn btn-secondary" onclick="npAddManualField()" style="margin-top:4px">+ Agregar campo manual</button>
+        <p class="hint" style="margin-top:10px">Tip: agregá campos como "NP Nº", "IMP Nº", "Obra/Cliente", "Responsable", "Equipos/Servicios".</p>
       </div>
     </div>
 
@@ -484,9 +488,8 @@ function switchPanel(name) {
   document.getElementById('panel-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'admin') renderAdmin();
-  if (name === 'cfg-rend') renderRendFields();
-  if (name === 'cfg-np') renderNpFields();
-  if (name === 'np' && msAccount) npCargarUltimoNP();
+  if (name === 'cfg-rend') { renderRendFields(); renderRendManualFields(); }
+  if (name === 'cfg-np') { renderNpFields(); renderNpManualFields(); }
   if (name === 'rend') renderRendResults();
 }
 
@@ -649,6 +652,13 @@ async function analyzeAll() {
 function renderRendResults() {
   const area = document.getElementById('rendResultsArea');
   if (!results.length) { area.innerHTML = ''; return; }
+  // Render manual fields section
+  const manualFields = getRendManualFields();
+  const manualSection = manualFields.length ? `
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-label">Campos manuales (se aplican a todos)</div>
+      ${manualFields.map((f,i)=>`<div style="margin-bottom:8px"><label>${esc(f.name)}</label><input type="text" id="rend-manual-${i}" placeholder="${esc(f.desc||f.name)}" style="font-size:14px" oninput="rendManualValues['${f.name.replace(/'/g,"\\'")}'] = this.value" /></div>`).join('')}
+    </div>` : '';
   const fields = getRendFields().filter(f => f.name.trim());
 
   const cards = results.map((r, ri) => {
@@ -675,8 +685,9 @@ function renderRendResults() {
 
 function exportExcel() {
   const fields = getRendFields().filter(f => f.name.trim());
-  const headers = ['Archivo','Fecha de análisis',...fields.map(f=>f.name)];
-  const rows = results.map(r => [r['__archivo__']||'',r['__fecha_analisis__']||'',...fields.map(f=>r[f.name]!=null?r[f.name]:'')]);
+  const manualFields = getRendManualFields().filter(f=>f.name.trim());
+  const headers = ['Archivo','Fecha de análisis',...manualFields.map(f=>f.name),...fields.map(f=>f.name)];
+  const rows = results.map(r => [r['__archivo__']||'',r['__fecha_analisis__']||'',...manualFields.map(f=>rendManualValues[f.name]||''),...fields.map(f=>r[f.name]!=null?r[f.name]:'')]);
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet([headers,...rows]);
   ws['!cols'] = headers.map((_,i)=>({wch:Math.min(Math.max(headers[i].length,...rows.map(r=>String(r[i]||'').length))+2,40)}));
@@ -854,19 +865,23 @@ async function spConfirm() {
       const headers = rows[0] || [];
       const fieldNames = fields.map(f => f.name);
       // Append rows
+      const manualFields = getRendManualFields().filter(f=>f.name.trim());
       results.forEach(r => {
-        const newRow = new Array(Math.max(headers.length, fieldNames.length + 2)).fill('');
-        // Try to match columns by name
+        const newRow = new Array(Math.max(headers.length, fieldNames.length + 2 + manualFields.length)).fill('');
         headers.forEach((h, i) => {
           if (h === 'Archivo') newRow[i] = r['__archivo__'] || '';
           else if (h === 'Fecha de análisis') newRow[i] = r['__fecha_analisis__'] || '';
-          else { const f = fields.find(f => f.name === h); if (f) newRow[i] = r[f.name] != null ? r[f.name] : ''; }
+          else {
+            const mf = manualFields.find(f=>f.name===h);
+            if (mf) newRow[i] = rendManualValues[mf.name] || '';
+            else { const f = fields.find(f => f.name === h); if (f) newRow[i] = r[f.name] != null ? r[f.name] : ''; }
+          }
         });
-        // If no matching headers found, just append all fields
         if (headers.length === 0) {
           newRow[0] = r['__archivo__'] || '';
           newRow[1] = r['__fecha_analisis__'] || '';
-          fields.forEach((f, i) => { newRow[i+2] = r[f.name] != null ? r[f.name] : ''; });
+          manualFields.forEach((f,i)=>{newRow[i+2]=rendManualValues[f.name]||'';});
+          fields.forEach((f, i) => { newRow[i+2+manualFields.length] = r[f.name] != null ? r[f.name] : ''; });
         }
         rows.push(newRow);
       });
@@ -1111,187 +1126,472 @@ function fbSelectFile(item, relativePath) {
 
 
 // ── Notas de Pedido ────────────────────────────────────
-function npHandlePDF(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    npPdfB64 = e.target.result.split(',')[1];
-    document.getElementById('np-pdf-name').innerHTML = `<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid var(--green);border-radius:var(--radius-sm);padding:4px 12px;font-size:13px;color:var(--green);margin-top:8px">✓ ${esc(file.name)}</div>`;
-    document.getElementById('np-extract-btn').disabled = false;
-    document.getElementById('np-num1').className = 'step-num done';
-    document.getElementById('np-num1').textContent = '✓';
-    document.getElementById('np-step2').classList.remove('np-step-disabled');
-    document.getElementById('np-num2').className = 'step-num active';
-    if (msAccount) npCargarUltimoNP();
-  };
-  reader.readAsDataURL(file);
+// Storage
+const NP_MANUAL_FIELDS_KEY = 'np_manual_fields';
+const REND_MANUAL_FIELDS_KEY = 'rend_manual_fields';
+const NP_SP_DEFAULTS_KEY = 'np_sp_defaults';
+
+const DEFAULT_NP_MANUAL_FIELDS = [
+  { name: 'NP N\u00ba', desc: 'N\u00famero de NP (se carga autom\u00e1tico si eligi\u00f3s Excel existente)', auto: true },
+  { name: 'IMP N\u00ba', desc: 'N\u00famero de importaci\u00f3n' },
+  { name: 'Obra / Cliente', desc: 'Nombre de la obra o cliente' },
+  { name: 'Responsable', desc: 'Iniciales o nombre del responsable' },
+  { name: 'Equipos / Servicios', desc: 'Descripci\u00f3n de equipos o servicios' },
+];
+const DEFAULT_REND_MANUAL_FIELDS = [];
+
+function getNpManualFields() { return JSON.parse(localStorage.getItem(NP_MANUAL_FIELDS_KEY)||'null') || DEFAULT_NP_MANUAL_FIELDS; }
+function saveNpManualFields(f) { localStorage.setItem(NP_MANUAL_FIELDS_KEY, JSON.stringify(f)); }
+function getRendManualFields() { return JSON.parse(localStorage.getItem(REND_MANUAL_FIELDS_KEY)||'null') || DEFAULT_REND_MANUAL_FIELDS; }
+function saveRendManualFields(f) { localStorage.setItem(REND_MANUAL_FIELDS_KEY, JSON.stringify(f)); }
+function getNpSpDefaults() { return JSON.parse(localStorage.getItem(NP_SP_DEFAULTS_KEY)||'null') || {mode:'existing'}; }
+function saveNpSpDefaults(d) { localStorage.setItem(NP_SP_DEFAULTS_KEY, JSON.stringify(d)); }
+
+// NP files state
+let rendManualValues = {};
+let npFiles = []; // [{file, status, b64, result}]
+let npExtractedList = []; // one per file
+let npManualValues = {}; // {fieldName: value}
+
+// ── NP Config field editors ────────────────────────────
+function renderNpManualFields() {
+  const fields = getNpManualFields();
+  document.getElementById('npManualFieldList').innerHTML = fields.map((f,i) => `
+    <div class="field-row">
+      <div class="field-row-top">
+        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="npUpdateManualField(${i},'name',this.value)" />
+        <button class="remove-btn" onclick="npRemoveManualField(${i})">\u2715</button>
+      </div>
+      <input class="desc-input" value="${esc(f.desc||'')}" placeholder="Descripci\u00f3n (opcional)" oninput="npUpdateManualField(${i},'desc',this.value)" />
+    </div>`).join('');
+}
+function npUpdateManualField(i,k,v){const f=getNpManualFields();f[i][k]=v;saveNpManualFields(f);}
+function npRemoveManualField(i){const f=getNpManualFields();f.splice(i,1);saveNpManualFields(f);renderNpManualFields();npRenderManualInputs();}
+function npAddManualField(){const f=getNpManualFields();f.push({name:'',desc:''});saveNpManualFields(f);renderNpManualFields();}
+
+function renderRendManualFields() {
+  const fields = getRendManualFields();
+  document.getElementById('rendManualFieldList').innerHTML = fields.map((f,i) => `
+    <div class="field-row">
+      <div class="field-row-top">
+        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="rendUpdateManualField(${i},'name',this.value)" />
+        <button class="remove-btn" onclick="rendRemoveManualField(${i})">\u2715</button>
+      </div>
+      <input class="desc-input" value="${esc(f.desc||'')}" placeholder="Descripci\u00f3n (opcional)" oninput="rendUpdateManualField(${i},'desc',this.value)" />
+    </div>`).join('');
+}
+function rendUpdateManualField(i,k,v){const f=getRendManualFields();f[i][k]=v;saveRendManualFields(f);}
+function rendRemoveManualField(i){const f=getRendManualFields();f.splice(i,1);saveRendManualFields(f);renderRendManualFields();}
+function rendAddManualField(){const f=getRendManualFields();f.push({name:'',desc:''});saveRendManualFields(f);renderRendManualFields();}
+
+// ── NP manual inputs in panel ─────────────────────────
+function npRenderManualInputs() {
+  const fields = getNpManualFields();
+  const el = document.getElementById('np-manual-fields-inputs');
+  if (!el) return;
+  el.innerHTML = fields.map((f,i) => `
+    <div style="margin-bottom:10px">
+      <label>${esc(f.name)}${f.auto?' <span style=\"font-size:11px;color:var(--text3)\">(auto si Excel existente)</span>':''}</label>
+      <input type="text" id="np-manual-${i}" placeholder="${esc(f.desc||f.name)}" value="${esc(npManualValues[f.name]||'')}" oninput="npManualValues['${f.name.replace(/'/g,"\\'").replace(/"/g,'\\"')}'] = this.value" />
+    </div>`).join('');
 }
 
-async function npCargarUltimoNP() {
+// ── NP manual inputs in Rendiciones panel ────────────
+function rendRenderManualInputs() {
+  // Insert manual fields section above the results in Rendiciones panel
+  // (called after analyze)
+}
+
+// ── NP file handling ──────────────────────────────────
+const npDropZone = document.getElementById('npDropZone');
+if (npDropZone) {
+  npDropZone.addEventListener('dragover', e=>{e.preventDefault();npDropZone.classList.add('drag-over');});
+  npDropZone.addEventListener('dragleave', ()=>npDropZone.classList.remove('drag-over'));
+  npDropZone.addEventListener('drop', e=>{e.preventDefault();npDropZone.classList.remove('drag-over');npHandleFiles(e.dataTransfer.files);});
+}
+
+function npHandleFiles(fileList) {
+  Array.from(fileList).forEach(f => {
+    if (!npFiles.find(x=>x.file.name===f.name&&x.file.size===f.size))
+      npFiles.push({file:f, status:'pending', b64:null, result:null});
+  });
+  npRenderFileList();
+  document.getElementById('np-extract-btn').disabled = !npFiles.length || !getApiKey();
+  if (npFiles.length) {
+    document.getElementById('np-num1').className='step-num done';
+    document.getElementById('np-num1').textContent='\u2713';
+    document.getElementById('np-step2').classList.remove('np-step-disabled');
+    document.getElementById('np-num2').className='step-num active';
+    npRenderManualInputs();
+  }
+}
+
+function npRenderFileList() {
+  const el = document.getElementById('np-file-list');
+  if (!npFiles.length) {el.innerHTML='';return;}
+  const icons={'application/pdf':'\uD83D\uDCC4','image/png':'\uD83D\uDDBC\uFE0F','image/jpeg':'\uD83D\uDDBC\uFE0F'};
+  const labels={pending:'Pendiente',processing:'Procesando...',done:'Listo \u2713',error:'Error'};
+  const cls={pending:'badge-pending',processing:'badge-processing',done:'badge-done',error:'badge-error'};
+  el.innerHTML = npFiles.map((f,i) => `
+    <div class="file-item">
+      <div class="file-icon">${icons[f.file.type]||'\uD83D\uDCCE'}</div>
+      <div class="file-info"><div class="file-name">${esc(f.file.name)}</div><div class="file-size">${formatSize(f.file.size)}</div></div>
+      <span class="badge ${cls[f.status]}">${labels[f.status]}</span>
+    </div>`).join('');
+}
+
+// ── NP Extraction ─────────────────────────────────────
+async function npExtractAll() {
+  const apiKey = getApiKey();
+  if (!apiKey) {alert('Configurá la API key en Admin.');return;}
+  if (!npFiles.length) return;
+  const btn = document.getElementById('np-extract-btn');
+  btn.disabled=true; btn.textContent='Procesando...';
+  npExtractedList = [];
+  const npFields = getNpFields().filter(f=>f.name.trim());
+  const fieldDefs = npFields.map(f=>`  "${f.name}": "${f.desc}"`).join(',\n');
+  const prompt = `Analiz\u00e1 esta Proforma Invoice y extra\u00e9 los datos en formato JSON. Devolv\u00e9 SOLO el JSON, sin texto adicional ni backticks.
+{
+${fieldDefs},
+  "items": [{"item": n\u00famero, "cant": cantidad, "descripcion": "descripci\u00f3n completa", "p_unitario": precio, "p_total": precio total}]
+}`;
+
+  for (let i=0; i<npFiles.length; i++) {
+    const item = npFiles[i];
+    item.status = 'processing';
+    npRenderFileList();
+    showMsg('np-status-bar','loading',`Analizando ${item.file.name} (${i+1}/${npFiles.length})...`);
+    try {
+      if (!item.b64) item.b64 = await fileToBase64(item.file);
+      const isPdf = item.file.type==='application/pdf';
+      const res = await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:[
+          isPdf ? {type:'document',source:{type:'base64',media_type:'application/pdf',data:item.b64}}
+                : {type:'image',source:{type:'base64',media_type:item.file.type,data:item.b64}},
+          {type:'text',text:prompt}
+        ]}]})
+      });
+      if (!res.ok) {const e=await res.json();throw new Error(e.error?.message||'HTTP '+res.status);}
+      const data = await res.json();
+      const extracted = JSON.parse(data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
+      extracted.__archivo__ = item.file.name;
+      item.result = extracted;
+      item.status = 'done';
+      npExtractedList.push(extracted);
+    } catch(e) {
+      item.status = 'error';
+      console.error(e);
+    }
+    npRenderFileList();
+  }
+
+  if (npExtractedList.length) {
+    showMsg('np-status-bar','success',`\u2713 ${npExtractedList.length} archivo(s) analizados`);
+    npRenderPreviewList();
+    document.getElementById('np-num2').className='step-num done';
+    document.getElementById('np-num2').textContent='\u2713';
+    document.getElementById('np-step3').classList.remove('np-step-disabled');
+    document.getElementById('np-num3').className='step-num active';
+    document.getElementById('np-btn-registro').disabled=false;
+    document.getElementById('np-btn-np').disabled=false;
+  } else {
+    showMsg('np-status-bar','error','\u2715 No se pudo analizar ning\u00fan archivo');
+  }
+  btn.textContent='\u2736 Extraer datos con IA'; btn.disabled=false;
+}
+
+function npRenderPreviewList() {
+  const npFields = getNpFields().filter(f=>f.name.trim()&&f.name!=='items');
+  const area = document.getElementById('np-preview-area');
+  area.innerHTML = npExtractedList.map((d,di) => {
+    const fieldRows = npFields.map(f => `
+      <div class="np-preview-row">
+        <span class="k">${esc(f.name)}</span>
+        <input style="text-align:right;font-weight:600;font-size:12px;background:transparent;border:none;color:var(--text);font-family:inherit;max-width:60%;outline:none;padding:2px 4px;border-radius:4px"
+          value="${esc(d[f.name]!=null?String(d[f.name]):'\u2014')}"
+          onfocus="this.style.background='var(--blue-bg)'" onblur="this.style.background='transparent'"
+          oninput="npExtractedList[${di}]['${f.name.replace(/'/g,"\\'").replace(/\\/g,'\\\\')}'] = this.value" />
+      </div>`).join('');
+    const itemRows = (d.items||[]).map(it=>`
+      <div class="np-item-row">
+        <span>${it.item}</span><span>${it.cant}</span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(it.descripcion)}">${esc(it.descripcion)}</span>
+        <span style="text-align:right">${Number(it.p_unitario).toFixed(2)}</span>
+        <span style="text-align:right">${Number(it.p_total).toFixed(2)}</span>
+      </div>`).join('');
+    return `
+      <div class="np-preview" style="margin-bottom:12px">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600">\uD83D\uDCC4 ${esc(d.__archivo__||'')}</div>
+        ${fieldRows}
+        <div class="np-items-header"><span>#</span><span>Cant</span><span>Descripci\u00f3n</span><span style="text-align:right">P.Unit</span><span style="text-align:right">P.Total</span></div>
+        ${itemRows}
+      </div>`;
+  }).join('');
+}
+
+// ── NP Modal ──────────────────────────────────────────
+let npSpDefaults = getNpSpDefaults();
+
+function npShowModal() {
+  npSpDefaults = getNpSpDefaults();
+  const mode = npSpDefaults.mode || 'existing';
+  // Reuse same modal structure but for NP
+  // Update labels
+  document.getElementById('sp-folder-label').textContent = npSpDefaults.comprobantesLabel || 'Seleccionar carpeta';
+  document.getElementById('sp-excel-label').textContent = npSpDefaults.excelLabel || 'Sin seleccionar';
+  document.getElementById('sp-newfolder-label').textContent = npSpDefaults.newFolderLabel || 'Sin seleccionar';
+  // Set target to NP
+  document.getElementById('spModal').dataset.target = 'np';
+  spSetMode(mode);
+  document.getElementById('spModal').classList.remove('hidden');
+  // Override confirm button
+  document.getElementById('sp-confirm-btn').onclick = npConfirm;
+  // Buttons target NP sp defaults
+  document.querySelector('#sp-folder-display button').onclick = ()=>fbOpen('folder','np-comprobantes');
+  document.querySelector('#sp-existing-section button').onclick = ()=>fbOpen('file','np-excel');
+  document.querySelector('#sp-new-section button').onclick = ()=>fbOpen('folder','np-newfolder');
+}
+
+// Extend fbSelectCurrent and fbSelectFile for NP targets
+const _origFbSelectCurrent = fbSelectCurrent;
+fbSelectCurrent = function() {
+  const btn = document.getElementById('fb-select-btn');
+  const path = btn.dataset.path;
+  const itemId = btn.dataset.id;
+  const siteName = fbCurrentSiteName||'';
+  const label = siteName + (path ? ' \u203a ' + path.replace(/\//g,' \u203a ') : '');
+  if (fbTarget==='np-comprobantes') {
+    npSpDefaults.comprobantesFolder=path; npSpDefaults.comprobantesLabel=label;
+    npSpDefaults.comprobantesId=itemId; npSpDefaults.comprobantesS=fbCurrentSiteId;
+    document.getElementById('sp-folder-label').textContent=label;
+    saveNpSpDefaults(npSpDefaults);
+  } else if (fbTarget==='np-newfolder') {
+    npSpDefaults.newFolder=path; npSpDefaults.newFolderLabel=label;
+    npSpDefaults.newFolderId=itemId; npSpDefaults.newFolderS=fbCurrentSiteId;
+    document.getElementById('sp-newfolder-label').textContent=label;
+    saveNpSpDefaults(npSpDefaults);
+  } else {
+    _origFbSelectCurrent();
+  }
+  fbClose();
+};
+
+const _origFbSelectFile = fbSelectFile;
+fbSelectFile = function(item, relativePath) {
+  if (fbTarget==='np-excel') {
+    npSpDefaults.excelPath=relativePath; npSpDefaults.excelId=item.id;
+    npSpDefaults.excelS=fbCurrentSiteId; npSpDefaults.excelLabel=item.name;
+    document.getElementById('sp-excel-label').textContent=item.name;
+    saveNpSpDefaults(npSpDefaults);
+    // Load NP number from this excel
+    npCargarUltimoNPFromExcel(item.id, fbCurrentSiteId);
+    fbClose();
+  } else {
+    _origFbSelectFile(item, relativePath);
+  }
+};
+
+async function npCargarUltimoNPFromExcel(itemId, siteId) {
   try {
     const token = await getMsToken();
-    const siteId = await getSiteId(token);
-    const encodedPath = NP_REGISTRO.split('/').map(encodeURIComponent).join('/');
-    const resp = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}:/content`,{headers:{Authorization:'Bearer '+token}});
+    const sid = siteId || await getSiteId(token);
+    const resp = await fetch(`https://graph.microsoft.com/v1.0/sites/${sid}/drive/items/${itemId}/content`,{headers:{Authorization:'Bearer '+token}});
     if (!resp.ok) return;
     const ab = await resp.arrayBuffer();
     const wb = XLSX.read(ab,{type:'array'});
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
     let ultimo = 0;
-    for (let i=1;i<rows.length;i++) { const v=rows[i][3]; if(v&&!isNaN(parseInt(v))) ultimo=Math.max(ultimo,parseInt(v)); }
-    const inp = document.getElementById('np-num-input');
-    inp.value = ultimo+1; inp.removeAttribute('readonly'); inp.style.background='';
-  } catch(e) { console.log('No se pudo cargar último NP:',e.message); }
+    for (let i=1;i<rows.length;i++){const v=rows[i][3];if(v&&!isNaN(parseInt(v)))ultimo=Math.max(ultimo,parseInt(v));}
+    // Set NP num in manual fields
+    const fields = getNpManualFields();
+    const npField = fields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
+    if (npField) {
+      npManualValues[npField.name] = String(ultimo+1);
+      npRenderManualInputs();
+    }
+  } catch(e) { console.log('No se pudo cargar NP:',e.message); }
 }
 
-async function npExtractData() {
-  if (!npPdfB64) return;
-  const apiKey = getApiKey();
-  if (!apiKey) { alert('Configurá la API key en Admin.'); switchPanel('admin'); return; }
-  const btn = document.getElementById('np-extract-btn');
-  btn.disabled = true; btn.textContent = 'Procesando...';
-  document.getElementById('np-preview-area').innerHTML = '';
-  showMsg('np-status-bar','loading','Analizando PDF con IA...');
+async function npConfirm() {
+  const btn = document.getElementById('sp-confirm-btn');
+  npSpDefaults.mode = spMode;
+  saveNpSpDefaults(npSpDefaults);
 
-  const npFields = getNpFields().filter(f=>f.name.trim());
-  const fieldDefs = npFields.map(f=>`  "${f.name}": ${f.name==='monto_total'?'número total sin símbolo':f.name==='items'?'array de items':'\"'+f.desc+'\"'}`).join(',\n');
+  if (spMode==='local') { npGenerateAllNP(); spModalClose(); return; }
+  if (spMode==='existing' && !npSpDefaults.excelId && !npSpDefaults.excelPath) {alert('Seleccion\u00e1 un archivo Excel destino.');return;}
+  if (spMode==='new' && !npSpDefaults.newFolderId && !npSpDefaults.newFolder) {alert('Seleccion\u00e1 una carpeta destino.');return;}
 
-  const prompt = `Analizá esta Proforma Invoice y extraé los datos en formato JSON. Devolvé SOLO el JSON, sin texto adicional ni backticks.
-{
-${fieldDefs},
-  "items": [{"item": número, "cant": cantidad, "descripcion": "descripción completa del producto", "p_unitario": precio unitario, "p_total": precio total}]
-}`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:[
-        {type:'document',source:{type:'base64',media_type:'application/pdf',data:npPdfB64}},
-        {type:'text',text:prompt}
-      ]}]})
-    });
-    if (!res.ok) { const e=await res.json(); throw new Error(e.error?.message||'HTTP '+res.status); }
-    const data = await res.json();
-    npExtractedData = JSON.parse(data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
-    showMsg('np-status-bar','success',`✓ ${npExtractedData.items?.length||0} ítems extraídos`);
-    npRenderPreview();
-    document.getElementById('np-num2').className='step-num done'; document.getElementById('np-num2').textContent='✓';
-    document.getElementById('np-step3').classList.remove('np-step-disabled');
-    document.getElementById('np-num3').className='step-num active';
-    document.getElementById('np-btn-registro').disabled=false;
-    document.getElementById('np-btn-np').disabled=false;
-  } catch(e) {
-    showMsg('np-status-bar','error','✕ Error: '+e.message);
-  } finally {
-    btn.textContent='✦ Extraer datos del PDF con IA'; btn.disabled=false;
-  }
-}
-
-function npRenderPreview() {
-  const d = npExtractedData;
-  const npFields = getNpFields().filter(f=>f.name.trim()&&f.name!=='items');
-  const fmt = n => Number(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
-
-  const fieldRows = npFields.map(f => `
-    <div class="np-preview-row">
-      <span class="k">${esc(f.name)}</span>
-      <input style="text-align:right;font-weight:600;font-size:12px;background:transparent;border:none;color:var(--text);font-family:inherit;max-width:60%;outline:none;padding:2px 4px;border-radius:4px" value="${esc(d[f.name]!=null?String(d[f.name]):'—')}" onfocus="this.style.background='var(--blue-bg)'" onblur="this.style.background='transparent'" oninput="npExtractedData['${f.name.replace(/'/g,"\\'")}'] = this.value" />
-    </div>`).join('');
-
-  const itemRows = (d.items||[]).map(i=>`
-    <div class="np-item-row">
-      <span>${i.item}</span><span>${i.cant}</span>
-      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(i.descripcion)}">${esc(i.descripcion)}</span>
-      <span style="text-align:right">${Number(i.p_unitario).toFixed(2)}</span>
-      <span style="text-align:right">${Number(i.p_total).toFixed(2)}</span>
-    </div>`).join('');
-
-  document.getElementById('np-preview-area').innerHTML = `
-    <div class="np-preview">
-      ${fieldRows}
-      <div class="np-items-header"><span>#</span><span>Cant</span><span>Descripción</span><span style="text-align:right">P.Unit</span><span style="text-align:right">P.Total</span></div>
-      ${itemRows}
-    </div>`;
-}
-
-async function npInsertarFila() {
-  const btn = document.getElementById('np-btn-registro');
-  btn.disabled=true; btn.textContent='⏳ Insertando...';
-  showMsg('np-gen-status','loading','Leyendo y actualizando Registro NP...');
+  btn.disabled=true;
+  const original = btn.textContent;
+  btn.textContent='\u23F3 Conectando...';
   try {
     const token = await getMsToken();
     const siteId = await getSiteId(token);
-    const encodedPath = NP_REGISTRO.split('/').map(encodeURIComponent).join('/');
-    const dlResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}:/content`,{headers:{Authorization:'Bearer '+token}});
-    if (!dlResp.ok) throw new Error('No se pudo leer el Registro NP');
-    const ab = await dlResp.arrayBuffer();
-    const wb = XLSX.read(ab,{type:'array'});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws,{header:1});
-    let filaVacia = rows.length+1;
-    for (let i=1;i<rows.length+1;i++) { if(!rows[i]||!rows[i][3]){filaVacia=i+1;break;} }
-    const npNum = parseInt(document.getElementById('np-num-input').value)||'';
-    const r = filaVacia-1;
-    if (!rows[r]) rows[r]=[];
-    rows[r][2]  = today();
-    rows[r][3]  = npNum;
-    rows[r][4]  = Number(npExtractedData.monto_total);
-    rows[r][5]  = npExtractedData.moneda;
-    rows[r][6]  = npExtractedData.plazo_pago;
-    rows[r][7]  = npExtractedData.empresa_compradora;
-    rows[r][8]  = today();
-    rows[r][9]  = npExtractedData.proveedor;
-    rows[r][11] = document.getElementById('np-equip').value||npExtractedData.proveedor;
-    rows[r][12] = npExtractedData.plazo_entrega;
-    rows[r][13] = document.getElementById('np-obra').value;
-    rows[r][14] = document.getElementById('np-resp').value;
-    const newWs = XLSX.utils.aoa_to_sheet(rows);
-    wb.Sheets[wb.SheetNames[0]] = newWs;
-    const wbOut = XLSX.write(wb,{type:'array',bookType:'xlsx'});
-    const ulResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodedPath}:/content`,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:new Uint8Array(wbOut)});
-    if (!ulResp.ok) throw new Error('Error al guardar: HTTP '+ulResp.status);
-    if (npPdfB64) {
-      const pdfName = document.getElementById('np-pdf-input').files[0]?.name||`proforma_NP${npNum}.pdf`;
-      await uploadToSharePoint(token, siteId, NP_FOLDER, pdfName, npPdfB64, true);
+    const manualFields = getNpManualFields();
+
+    // Upload comprobantes
+    const compSite = npSpDefaults.comprobantesS || siteId;
+    for (const item of npFiles.filter(f=>f.status==='done')) {
+      btn.textContent = `\u23F3 Subiendo ${item.file.name}...`;
+      if (!item.b64) item.b64 = await fileToBase64(item.file);
+      let uploadUrl;
+      if (npSpDefaults.comprobantesId) {
+        uploadUrl=`https://graph.microsoft.com/v1.0/sites/${compSite}/drive/items/${npSpDefaults.comprobantesId}:/${encodeURIComponent(item.file.name)}:/content`;
+      } else if (npSpDefaults.comprobantesFolder) {
+        const ep=npSpDefaults.comprobantesFolder.split('/').map(encodeURIComponent).join('/');
+        uploadUrl=`https://graph.microsoft.com/v1.0/sites/${compSite}/drive/root:/${ep}/${encodeURIComponent(item.file.name)}:/content`;
+      } else {
+        const ep=NP_FOLDER.split('/').map(encodeURIComponent).join('/');
+        uploadUrl=`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${ep}/${encodeURIComponent(item.file.name)}:/content`;
+      }
+      await fetch(uploadUrl,{method:'PUT',headers:{Authorization:'Bearer '+token},body:Uint8Array.from(atob(item.b64),c=>c.charCodeAt(0))});
     }
-    showMsg('np-gen-status','success',`✓ Fila ${filaVacia} insertada — NP Nº ${npNum}`);
-    btn.textContent='✓ Fila insertada';
+
+    if (spMode==='existing') {
+      btn.textContent='\u23F3 Actualizando Excel...';
+      const excelSite = npSpDefaults.excelS || siteId;
+      let dlResp;
+      if (npSpDefaults.excelId) {
+        dlResp=await fetch(`https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/items/${npSpDefaults.excelId}/content`,{headers:{Authorization:'Bearer '+token}});
+      } else {
+        const ep=npSpDefaults.excelPath.split('/').map(encodeURIComponent).join('/');
+        dlResp=await fetch(`https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/root:/${ep}:/content`,{headers:{Authorization:'Bearer '+token}});
+      }
+      if (!dlResp.ok) throw new Error('No se pudo leer el Excel');
+      const ab = await dlResp.arrayBuffer();
+      const wb = XLSX.read(ab,{type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws,{header:1});
+
+      // Insert one row per extracted file
+      for (const d of npExtractedList) {
+        let filaVacia = rows.length+1;
+        for (let i=1;i<rows.length+2;i++){if(!rows[i]||rows[i].every(c=>!c)){filaVacia=i+1;break;}}
+        const r = filaVacia-1;
+        if (!rows[r]) rows[r]=[];
+        rows[r][2] = today();
+        // Map manual fields by column index from header row
+        const headers = rows[0]||[];
+        manualFields.forEach(f => {
+          const val = npManualValues[f.name]||'';
+          const colIdx = headers.findIndex(h=>h&&String(h).toLowerCase().includes(f.name.toLowerCase().slice(0,4)));
+          if (colIdx>=0) rows[r][colIdx]=val;
+        });
+        // Map extracted fields
+        rows[r][4]  = Number(d.monto_total)||'';
+        rows[r][5]  = d.moneda||'';
+        rows[r][6]  = d.plazo_pago||'';
+        rows[r][7]  = d.empresa_compradora||'';
+        rows[r][8]  = today();
+        rows[r][9]  = d.proveedor||'';
+        rows[r][12] = d.plazo_entrega||'';
+        // Manual fields hardcoded columns
+        const obraField = manualFields.find(f=>f.name.toLowerCase().includes('obra'));
+        const respField = manualFields.find(f=>f.name.toLowerCase().includes('resp'));
+        const equipField = manualFields.find(f=>f.name.toLowerCase().includes('equip'));
+        const npNumField = manualFields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
+        const impField = manualFields.find(f=>f.name.toLowerCase().includes('imp'));
+        if (npNumField) rows[r][3]=parseInt(npManualValues[npNumField.name])||'';
+        if (impField) rows[r][10]=npManualValues[impField.name]||'';
+        if (equipField) rows[r][11]=npManualValues[equipField.name]||d.proveedor||'';
+        if (obraField) rows[r][13]=npManualValues[obraField.name]||'';
+        if (respField) rows[r][14]=npManualValues[respField.name]||'';
+      }
+
+      const newWs = XLSX.utils.aoa_to_sheet(rows);
+      wb.Sheets[wb.SheetNames[0]]=newWs;
+      const wbOut = XLSX.write(wb,{type:'array',bookType:'xlsx'});
+      let ulUrl;
+      if (npSpDefaults.excelId) {
+        ulUrl=`https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/items/${npSpDefaults.excelId}/content`;
+      } else {
+        const ep=npSpDefaults.excelPath.split('/').map(encodeURIComponent).join('/');
+        ulUrl=`https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/root:/${ep}:/content`;
+      }
+      await fetch(ulUrl,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:new Uint8Array(wbOut)});
+
+    } else if (spMode==='new') {
+      btn.textContent='\u23F3 Creando Excel...';
+      const npFields = getNpFields().filter(f=>f.name.trim());
+      const manualNames = manualFields.map(f=>f.name);
+      const headers = [...manualNames, ...npFields.map(f=>f.name), 'Archivo'];
+      const rows2 = npExtractedList.map(d => [
+        ...manualFields.map(f=>npManualValues[f.name]||''),
+        ...npFields.map(f=>d[f.name]!=null?d[f.name]:''),
+        d.__archivo__||''
+      ]);
+      const wb2=XLSX.utils.book_new();
+      const ws2=XLSX.utils.aoa_to_sheet([headers,...rows2]);
+      ws2['!cols']=headers.map((_,i)=>({wch:Math.min(Math.max(headers[i].length,...rows2.map(r=>String(r[i]||'').length))+2,40)}));
+      XLSX.utils.book_append_sheet(wb2,ws2,'Notas NP');
+      const wbOut2=XLSX.write(wb2,{type:'array',bookType:'xlsx'});
+      const fileName=`notas_np_${new Date().toISOString().slice(0,10)}.xlsx`;
+      const newSite=npSpDefaults.newFolderS||siteId;
+      let newUrl;
+      if (npSpDefaults.newFolderId) {
+        newUrl=`https://graph.microsoft.com/v1.0/sites/${newSite}/drive/items/${npSpDefaults.newFolderId}:/${encodeURIComponent(fileName)}:/content`;
+      } else {
+        const ef=(npSpDefaults.newFolder||NP_FOLDER).split('/').map(encodeURIComponent).join('/');
+        newUrl=`https://graph.microsoft.com/v1.0/sites/${newSite}/drive/root:/${ef}/${encodeURIComponent(fileName)}:/content`;
+      }
+      await fetch(newUrl,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:new Uint8Array(wbOut2)});
+    }
+
+    spModalClose();
+    showMsg('np-gen-status','success','\u2713 Guardado en SharePoint correctamente');
   } catch(e) {
-    showMsg('np-gen-status','error','✕ Error: '+e.message);
-    btn.disabled=false; btn.textContent='☁️ Insertar fila en Registro NP';
+    showMsg('np-gen-status','error','\u2715 Error: '+e.message);
+  } finally {
+    btn.textContent=original; btn.disabled=false;
+    document.getElementById('sp-confirm-btn').onclick=spConfirm;
   }
 }
 
-function npGenerateNP() {
-  const d = npExtractedData;
-  if (!d) return;
-  const npNum=document.getElementById('np-num-input').value;
-  const impNum=document.getElementById('np-imp-num').value;
-  const wb=XLSX.utils.book_new(); const ws={};
-  const s=(cell,val,bold)=>{ws[cell]={v:val,t:typeof val==='number'?'n':'s'};if(bold)ws[cell].s={font:{bold:true}};};
-  s('C1','PROVEEDOR: ',true); s('D1',`NOTA DE PEDIDO Nº  ${npNum||''}`,true);
-  s('C2',d.proveedor); s('D2',`IMP  ${impNum||''}`,true);
-  s('C3','Atención: '); s('D3',d.atencion||'');
-  s('C4','Teléfono:'); s('D4','FECHA:'); s('E4',today());
-  s('C5',d.telefono||''); s('D5','MONEDA:'); s('E5',d.moneda);
-  s('C6','e-mail:'); s('D6',d.email||'');
-  s('A7','ITEM',true); s('B7','CANT.',true); s('C7','DESCRIPCION',true); s('D7','P.UNITARIO',true); s('E7','P.TOTAL',true);
-  let row=8;
-  for(const it of(d.items||[])){ws[`A${row}`]={v:it.item,t:'n'};ws[`B${row}`]={v:it.cant,t:'n'};ws[`C${row}`]={v:it.descripcion,t:'s'};ws[`D${row}`]={v:Number(it.p_unitario),t:'n'};ws[`E${row}`]={v:Number(it.p_total),t:'n'};row++;}
-  const sr=row+1;
-  s(`C${sr}`,'                                       SUB-TOTAL'); ws[`E${sr}`]={v:Number(d.monto_total),t:'n'};
-  s(`C${sr+1}`,'                                      TOTAL'); ws[`E${sr+1}`]={v:Number(d.monto_total),t:'n'};
-  const pr=sr+3; s(`A${pr}`,'Payment terms',true); s(`B${pr}`,d.plazo_pago);
-  const plr=pr+2; s(`A${plr}`,'Plazo de Entrega:',true); s(`B${plr}`,d.plazo_entrega);
-  const ir=plr+2; s(`A${ir}`,'Incoterm',true); s(`B${ir}`,d.incoterm);
-  const or2=ir+2; s(`A${or2}`,'Observaciones:'); s(`B${or2}`,d.observaciones||'');
-  ws['!ref']=`A1:E${or2+4}`; ws['!cols']=[{wch:6},{wch:8},{wch:55},{wch:14},{wch:14}];
-  XLSX.utils.book_append_sheet(wb,ws,'Hoja1');
-  XLSX.writeFile(wb,`NP_${npNum||'nueva'}_IMP_${impNum||''}_${(d.proveedor||'').split(' ')[0]}.xlsx`);
-  showMsg('np-gen-status','success','✓ Nota de Pedido descargada');
+async function npCargarUltimoNP() {
+  // Legacy - now handled via modal excel selection
 }
+
+function npGenerateAllNP() {
+  if (!npExtractedList.length) return;
+  const manualFields = getNpManualFields();
+  npExtractedList.forEach((d,idx) => {
+    const npNumField = manualFields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
+    const impField = manualFields.find(f=>f.name.toLowerCase().includes('imp'));
+    const npNum = npNumField ? (npManualValues[npNumField.name]||'') : '';
+    const impNum = impField ? (npManualValues[impField.name]||'') : '';
+    const wb=XLSX.utils.book_new(); const ws={};
+    const s=(cell,val,bold)=>{ws[cell]={v:val,t:typeof val==='number'?'n':'s'};if(bold)ws[cell].s={font:{bold:true}};};
+    s('C1','PROVEEDOR: ',true); s('D1',`NOTA DE PEDIDO N\u00ba  ${npNum}`,true);
+    s('C2',d.proveedor||''); s('D2',`IMP  ${impNum}`,true);
+    s('C3','Atenci\u00f3n: '); s('D3',d.atencion||'');
+    s('C4','Tel\u00e9fono:'); s('D4','FECHA:'); s('E4',today());
+    s('C5',d.telefono||''); s('D5','MONEDA:'); s('E5',d.moneda||'');
+    s('C6','e-mail:'); s('D6',d.email||'');
+    s('A7','ITEM',true); s('B7','CANT.',true); s('C7','DESCRIPCION',true); s('D7','P.UNITARIO',true); s('E7','P.TOTAL',true);
+    let row=8;
+    for(const it of(d.items||[])){ws[`A${row}`]={v:it.item,t:'n'};ws[`B${row}`]={v:it.cant,t:'n'};ws[`C${row}`]={v:it.descripcion,t:'s'};ws[`D${row}`]={v:Number(it.p_unitario),t:'n'};ws[`E${row}`]={v:Number(it.p_total),t:'n'};row++;}
+    const sr=row+1;
+    s(`C${sr}`,'                SUB-TOTAL'); ws[`E${sr}`]={v:Number(d.monto_total),t:'n'};
+    s(`C${sr+1}`,'                TOTAL'); ws[`E${sr+1}`]={v:Number(d.monto_total),t:'n'};
+    const pr=sr+3; s(`A${pr}`,'Payment terms',true); s(`B${pr}`,d.plazo_pago||'');
+    const plr=pr+2; s(`A${plr}`,'Plazo de Entrega:',true); s(`B${plr}`,d.plazo_entrega||'');
+    const ir=plr+2; s(`A${ir}`,'Incoterm',true); s(`B${ir}`,d.incoterm||'');
+    const or2=ir+2; s(`A${or2}`,'Observaciones:'); s(`B${or2}`,d.observaciones||'');
+    ws['!ref']=`A1:E${or2+4}`; ws['!cols']=[{wch:6},{wch:8},{wch:55},{wch:14},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,ws,'Hoja1');
+    XLSX.writeFile(wb,`NP_${npNum}_${(d.proveedor||'').split(' ')[0]}_${idx+1}.xlsx`);
+  });
+  showMsg('np-gen-status','success','\u2713 Notas de Pedido descargadas');
+}
+
+// Dummy stubs for old functions
+function npHandlePDF(){}
+function npExtractData(){}
+function npRenderPreview(){}
+function npInsertarFila(){}
+function npGenerateNP(){}
 
 // ── Admin panel ────────────────────────────────────────
 function renderAdmin() {
