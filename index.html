@@ -203,6 +203,14 @@
     .map-select { flex:1.2;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-family:inherit;font-size:13px;outline:none; }
     .map-select.matched { border-color:var(--green);background:var(--green-bg); }
     .map-select.unmatched { border-color:var(--border); }
+
+    /* ── Drag to reorder ── */
+    .field-row { cursor:default; transition: opacity 0.15s, transform 0.15s; }
+    .field-row.dragging { opacity:0.4; }
+    .field-row.drag-over-top { border-top:2px solid var(--blue); }
+    .field-row.drag-over-bottom { border-bottom:2px solid var(--blue); }
+    .drag-handle { cursor:grab; color:var(--text3); padding:4px 6px; font-size:16px; flex-shrink:0; user-select:none; }
+    .drag-handle:active { cursor:grabbing; }
   </style>
 </head>
 <body>
@@ -271,7 +279,8 @@
           <div><div style="font-size:15px;font-weight:600">Guardar</div><div style="font-size:12px;color:var(--text2)">Insertá filas y descargá las Notas de Pedido</div></div>
         </div>
         <button class="btn btn-primary" id="np-btn-registro" onclick="npShowModal()" disabled style="margin-bottom:8px">☁️ Guardar en SharePoint</button>
-        <button class="btn btn-secondary" id="np-btn-np" onclick="npGenerateAllNP()" disabled>📄 Descargar Notas de Pedido (.xlsx)</button>
+        <button class="btn btn-secondary" id="np-btn-np" onclick="npGenerateAllNP()" disabled style="margin-bottom:8px">📄 Descargar Notas de Pedido (.xlsx)</button>
+        <button class="btn btn-secondary" onclick="npClearAll()" style="color:var(--red)">🗑 Limpiar todo</button>
         <div id="np-gen-status"></div>
       </div>
     </div>
@@ -544,8 +553,14 @@ function showMsg(id, type, msg) {
 function renderRendFields() {
   const fields = getRendFields();
   document.getElementById('rendFieldList').innerHTML = fields.map((f, i) => `
-    <div class="field-row">
+    <div class="field-row" draggable="true"
+      ondragstart="dragStart(event,'rend-ia',${i})"
+      ondragover="dragOver(event)"
+      ondragleave="dragLeave(event)"
+      ondrop="dragDrop(event,'rend-ia',${i})"
+      ondragend="dragEnd(event)">
       <div class="field-row-top">
+        <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
         <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="rendUpdateField(${i},'name',this.value)" />
         <button class="remove-btn" onclick="rendRemoveField(${i})">✕</button>
       </div>
@@ -560,9 +575,15 @@ function rendAddField() { const f=getRendFields(); f.push({name:'',desc:''}); sa
 function renderNpFields() {
   const fields = getNpFields();
   document.getElementById('npFieldList').innerHTML = fields.map((f, i) => `
-    <div class="field-row">
+    <div class="field-row" draggable="true"
+      ondragstart="dragStart(event,'np-ia',${i})"
+      ondragover="dragOver(event)"
+      ondragleave="dragLeave(event)"
+      ondrop="dragDrop(event,'np-ia',${i})"
+      ondragend="dragEnd(event)">
       <div class="field-row-top">
-        <input value="${esc(f.name)}" placeholder="Nombre del campo (en inglés/español, ej: proveedor)" oninput="npUpdateField(${i},'name',this.value)" />
+        <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
+        <input value="${esc(f.name)}" placeholder="Nombre del campo (ej: proveedor)" oninput="npUpdateField(${i},'name',this.value)" />
         <button class="remove-btn" onclick="npRemoveField(${i})">✕</button>
       </div>
       <input class="desc-input" value="${esc(f.desc)}" placeholder="Instrucción para la IA" oninput="npUpdateField(${i},'desc',this.value)" />
@@ -1198,8 +1219,14 @@ let npManualValues = {}; // {fieldName: value}
 function renderNpManualFields() {
   const fields = getNpManualFields();
   document.getElementById('npManualFieldList').innerHTML = fields.map((f,i) => `
-    <div class="field-row">
+    <div class="field-row" draggable="true"
+      ondragstart="dragStart(event,'np-manual',${i})"
+      ondragover="dragOver(event)"
+      ondragleave="dragLeave(event)"
+      ondrop="dragDrop(event,'np-manual',${i})"
+      ondragend="dragEnd(event)">
       <div class="field-row-top">
+        <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
         <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="npUpdateManualField(${i},'name',this.value)" />
         <button class="remove-btn" onclick="npRemoveManualField(${i})">\u2715</button>
       </div>
@@ -1213,8 +1240,14 @@ function npAddManualField(){const f=getNpManualFields();f.push({name:'',desc:''}
 function renderRendManualFields() {
   const fields = getRendManualFields();
   document.getElementById('rendManualFieldList').innerHTML = fields.map((f,i) => `
-    <div class="field-row">
+    <div class="field-row" draggable="true"
+      ondragstart="dragStart(event,'rend-manual',${i})"
+      ondragover="dragOver(event)"
+      ondragleave="dragLeave(event)"
+      ondrop="dragDrop(event,'rend-manual',${i})"
+      ondragend="dragEnd(event)">
       <div class="field-row-top">
+        <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
         <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="rendUpdateManualField(${i},'name',this.value)" />
         <button class="remove-btn" onclick="rendRemoveManualField(${i})">\u2715</button>
       </div>
@@ -1791,6 +1824,91 @@ function buildRowFromMapping(mapping, excelHeaders, record, manualValues, manual
     if (record[fieldName] != null) row[i] = record[fieldName];
   });
   return row;
+}
+
+// ── Drag to reorder fields ────────────────────────────
+let dragSrcList = null;
+let dragSrcIdx = null;
+
+const fieldListGetters = {
+  'rend-ia':     [getRendFields,     saveRendFields,     renderRendFields],
+  'rend-manual': [getRendManualFields, saveRendManualFields, renderRendManualFields],
+  'np-ia':       [getNpFields,       saveNpFields,       renderNpFields],
+  'np-manual':   [getNpManualFields, saveNpManualFields, renderNpManualFields],
+};
+
+function dragStart(event, listKey, idx) {
+  dragSrcList = listKey;
+  dragSrcIdx = idx;
+  event.dataTransfer.effectAllowed = 'move';
+  event.currentTarget.classList.add('dragging');
+}
+
+function dragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  const el = event.currentTarget;
+  const rect = el.getBoundingClientRect();
+  const mid = rect.top + rect.height / 2;
+  el.classList.remove('drag-over-top', 'drag-over-bottom');
+  el.classList.add(event.clientY < mid ? 'drag-over-top' : 'drag-over-bottom');
+}
+
+function dragLeave(event) {
+  event.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+}
+
+function dragDrop(event, listKey, dropIdx) {
+  event.preventDefault();
+  event.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+  if (dragSrcList !== listKey || dragSrcIdx === null || dragSrcIdx === dropIdx) return;
+
+  const [getter, setter, renderer] = fieldListGetters[listKey];
+  const fields = getter();
+  const el = event.currentTarget;
+  const rect = el.getBoundingClientRect();
+  const mid = rect.top + rect.height / 2;
+  let targetIdx = event.clientY < mid ? dropIdx : dropIdx + 1;
+  if (dragSrcIdx < targetIdx) targetIdx--;
+
+  const [moved] = fields.splice(dragSrcIdx, 1);
+  fields.splice(targetIdx, 0, moved);
+  setter(fields);
+  renderer();
+}
+
+function dragEnd(event) {
+  event.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.field-row').forEach(el => {
+    el.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
+  });
+  dragSrcList = null;
+  dragSrcIdx = null;
+}
+
+// ── NP Clear ──────────────────────────────────────────
+function npClearAll() {
+  if (!confirm('¿Borrar todos los archivos y resultados de NP?')) return;
+  npFiles = [];
+  npExtractedList = [];
+  npManualValues = {};
+  document.getElementById('np-file-list').innerHTML = '';
+  document.getElementById('np-manual-fields-inputs').innerHTML = '';
+  document.getElementById('np-status-bar').innerHTML = '';
+  document.getElementById('np-preview-area').innerHTML = '';
+  document.getElementById('np-gen-status').innerHTML = '';
+  document.getElementById('np-num1').className = 'step-num active';
+  document.getElementById('np-num1').textContent = '1';
+  document.getElementById('np-num2').className = 'step-num';
+  document.getElementById('np-num2').textContent = '2';
+  document.getElementById('np-num3').className = 'step-num';
+  document.getElementById('np-num3').textContent = '3';
+  document.getElementById('np-step2').classList.add('np-step-disabled');
+  document.getElementById('np-step3').classList.add('np-step-disabled');
+  document.getElementById('np-extract-btn').disabled = true;
+  document.getElementById('np-btn-registro').disabled = true;
+  document.getElementById('np-btn-np').disabled = true;
+  document.getElementById('np-file-input').value = '';
 }
 
 // ── Admin panel ────────────────────────────────────────
