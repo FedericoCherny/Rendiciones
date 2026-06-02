@@ -185,6 +185,24 @@
     .fb-item-arrow { color:var(--text3);font-size:16px; }
     .fb-footer { padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0; }
     .fb-loading { text-align:center;padding:40px;color:var(--text2);font-size:14px; }
+
+    /* ── Mapping Modal ── */
+    .map-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:3000;display:flex;align-items:flex-end;justify-content:center; }
+    .map-modal-overlay.hidden { display:none; }
+    .map-modal { background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;width:100%;max-width:600px;max-height:90dvh;display:flex;flex-direction:column; }
+    .map-modal-header { padding:14px 20px;border-bottom:1px solid var(--border);flex-shrink:0; }
+    .map-modal-header h2 { font-size:16px;font-weight:600; }
+    .map-modal-header p { font-size:12px;color:var(--text2);margin-top:4px; }
+    .map-modal-body { flex:1;overflow-y:auto;padding:16px 20px; }
+    .map-modal-footer { padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0; }
+    .map-row { display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border); }
+    .map-row:last-child { border-bottom:none; }
+    .map-col-name { font-size:13px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .map-col-idx { font-size:11px;color:var(--text3);flex-shrink:0;width:24px; }
+    .map-arrow { color:var(--text3);flex-shrink:0; }
+    .map-select { flex:1.2;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-family:inherit;font-size:13px;outline:none; }
+    .map-select.matched { border-color:var(--green);background:var(--green-bg); }
+    .map-select.unmatched { border-color:var(--border); }
   </style>
 </head>
 <body>
@@ -405,6 +423,21 @@
       <div class="fb-footer">
         <button class="btn btn-secondary btn-sm" onclick="fbBack()">← Atrás</button>
         <button class="btn btn-primary btn-sm" id="fb-select-btn" onclick="fbSelectCurrent()" style="flex:1">Seleccionar esta carpeta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Column Mapping Modal ═══ -->
+  <div class="map-modal-overlay hidden" id="mapModal" onclick="if(event.target===this)mapModalClose()">
+    <div class="map-modal">
+      <div class="map-modal-header">
+        <h2>🗂 Mapeo de columnas</h2>
+        <p>Chequeá qué campo va en cada columna del Excel. Las sugerencias ya están pre-seleccionadas.</p>
+      </div>
+      <div class="map-modal-body" id="mapModalBody"></div>
+      <div class="map-modal-footer">
+        <button class="btn btn-secondary" onclick="mapModalClose()" style="flex:1">Cancelar</button>
+        <button class="btn btn-primary" onclick="mapModalConfirm()" style="flex:2">Confirmar mapeo y subir</button>
       </div>
     </div>
   </div>
@@ -866,22 +899,25 @@ async function spConfirm() {
       const fieldNames = fields.map(f => f.name);
       // Append rows
       const manualFields = getRendManualFields().filter(f=>f.name.trim());
+      const savedMapping = getMapping(REND_MAPPING_KEY);
+      const useMapping = Object.keys(savedMapping).length > 0;
       results.forEach(r => {
-        const newRow = new Array(Math.max(headers.length, fieldNames.length + 2 + manualFields.length)).fill('');
-        headers.forEach((h, i) => {
-          if (h === 'Archivo') newRow[i] = r['__archivo__'] || '';
-          else if (h === 'Fecha de análisis') newRow[i] = r['__fecha_analisis__'] || '';
-          else {
-            const mf = manualFields.find(f=>f.name===h);
-            if (mf) newRow[i] = rendManualValues[mf.name] || '';
-            else { const f = fields.find(f => f.name === h); if (f) newRow[i] = r[f.name] != null ? r[f.name] : ''; }
-          }
-        });
-        if (headers.length === 0) {
-          newRow[0] = r['__archivo__'] || '';
-          newRow[1] = r['__fecha_analisis__'] || '';
-          manualFields.forEach((f,i)=>{newRow[i+2]=rendManualValues[f.name]||'';});
-          fields.forEach((f, i) => { newRow[i+2+manualFields.length] = r[f.name] != null ? r[f.name] : ''; });
+        let newRow;
+        if (useMapping && headers.length > 0) {
+          newRow = buildRowFromMapping(savedMapping, headers, r, rendManualValues, manualFields, fields);
+        } else {
+          // Fallback: match by header name
+          newRow = new Array(Math.max(headers.length, fieldNames.length + 2 + manualFields.length)).fill('');
+          headers.forEach((h, i) => {
+            if (!h) return;
+            const hl = String(h).toLowerCase();
+            if (hl.includes('archivo')) { newRow[i] = r['__archivo__'] || ''; return; }
+            if (hl.includes('fecha anal')) { newRow[i] = r['__fecha_analisis__'] || ''; return; }
+            const mf = manualFields.find(f=>strSimilarity(f.name,String(h))>0.5);
+            if (mf) { newRow[i] = rendManualValues[mf.name] || ''; return; }
+            const ia = fields.find(f=>strSimilarity(f.name,String(h))>0.5);
+            if (ia) newRow[i] = r[ia.name] != null ? r[ia.name] : '';
+          });
         }
         rows.push(newRow);
       });
@@ -1112,16 +1148,21 @@ function fbSelectCurrent() {
   fbClose();
 }
 
-function fbSelectFile(item, relativePath) {
+async function fbSelectFile(item, relativePath) {
   if (fbTarget === 'excel') {
     spDefaults.excelPath = relativePath;
     spDefaults.excelId = item.id;
     spDefaults.excelS = fbCurrentSiteId;
     spDefaults.excelLabel = item.name;
     document.getElementById('sp-excel-label').textContent = item.name;
+    saveSpDefaults(spDefaults);
+    fbClose();
+    // Load headers and show mapping modal
+    await loadExcelHeadersAndShowMapping('rend', item.id, fbCurrentSiteId);
+  } else {
+    saveSpDefaults(spDefaults);
+    fbClose();
   }
-  saveSpDefaults(spDefaults);
-  fbClose();
 }
 
 
@@ -1379,15 +1420,17 @@ fbSelectCurrent = function() {
 };
 
 const _origFbSelectFile = fbSelectFile;
-fbSelectFile = function(item, relativePath) {
+fbSelectFile = async function(item, relativePath) {
   if (fbTarget==='np-excel') {
     npSpDefaults.excelPath=relativePath; npSpDefaults.excelId=item.id;
     npSpDefaults.excelS=fbCurrentSiteId; npSpDefaults.excelLabel=item.name;
     document.getElementById('sp-excel-label').textContent=item.name;
     saveNpSpDefaults(npSpDefaults);
     // Load NP number from this excel
-    npCargarUltimoNPFromExcel(item.id, fbCurrentSiteId);
     fbClose();
+    await npCargarUltimoNPFromExcel(item.id, fbCurrentSiteId);
+    // Load headers and show mapping modal for NP
+    await loadExcelHeadersAndShowMapping('np', item.id, fbCurrentSiteId);
   } else {
     _origFbSelectFile(item, relativePath);
   }
@@ -1466,38 +1509,27 @@ async function npConfirm() {
       const rows = XLSX.utils.sheet_to_json(ws,{header:1});
 
       // Insert one row per extracted file
+      const npHeaders = rows[0] || [];
+      const npSavedMapping = getMapping(NP_MAPPING_KEY);
+      const npUseMapping = Object.keys(npSavedMapping).length > 0 && npHeaders.length > 0;
+      const npIaFields = getNpFields().filter(f=>f.name.trim());
       for (const d of npExtractedList) {
-        let filaVacia = rows.length+1;
-        for (let i=1;i<rows.length+2;i++){if(!rows[i]||rows[i].every(c=>!c)){filaVacia=i+1;break;}}
-        const r = filaVacia-1;
-        if (!rows[r]) rows[r]=[];
-        rows[r][2] = today();
-        // Map manual fields by column index from header row
-        const headers = rows[0]||[];
-        manualFields.forEach(f => {
-          const val = npManualValues[f.name]||'';
-          const colIdx = headers.findIndex(h=>h&&String(h).toLowerCase().includes(f.name.toLowerCase().slice(0,4)));
-          if (colIdx>=0) rows[r][colIdx]=val;
-        });
-        // Map extracted fields
-        rows[r][4]  = Number(d.monto_total)||'';
-        rows[r][5]  = d.moneda||'';
-        rows[r][6]  = d.plazo_pago||'';
-        rows[r][7]  = d.empresa_compradora||'';
-        rows[r][8]  = today();
-        rows[r][9]  = d.proveedor||'';
-        rows[r][12] = d.plazo_entrega||'';
-        // Manual fields hardcoded columns
-        const obraField = manualFields.find(f=>f.name.toLowerCase().includes('obra'));
-        const respField = manualFields.find(f=>f.name.toLowerCase().includes('resp'));
-        const equipField = manualFields.find(f=>f.name.toLowerCase().includes('equip'));
-        const npNumField = manualFields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
-        const impField = manualFields.find(f=>f.name.toLowerCase().includes('imp'));
-        if (npNumField) rows[r][3]=parseInt(npManualValues[npNumField.name])||'';
-        if (impField) rows[r][10]=npManualValues[impField.name]||'';
-        if (equipField) rows[r][11]=npManualValues[equipField.name]||d.proveedor||'';
-        if (obraField) rows[r][13]=npManualValues[obraField.name]||'';
-        if (respField) rows[r][14]=npManualValues[respField.name]||'';
+        let newRow;
+        if (npUseMapping) {
+          newRow = buildRowFromMapping(npSavedMapping, npHeaders, d, npManualValues, manualFields, npIaFields);
+        } else {
+          // Fallback: use column similarity matching
+          newRow = new Array(Math.max(npHeaders.length, 20)).fill('');
+          npHeaders.forEach((h, i) => {
+            if (!h) return;
+            const mf = manualFields.find(f=>strSimilarity(f.name,String(h))>0.5);
+            if (mf) { newRow[i] = npManualValues[mf.name] || ''; return; }
+            const ia = npIaFields.find(f=>strSimilarity(f.name,String(h))>0.5);
+            if (ia) newRow[i] = d[ia.name] != null ? d[ia.name] : '';
+            if (String(h).toLowerCase().includes('fecha') && !String(h).toLowerCase().includes('entrega')) newRow[i] = today();
+          });
+        }
+        rows.push(newRow);
       }
 
       const newWs = XLSX.utils.aoa_to_sheet(rows);
@@ -1592,6 +1624,174 @@ function npExtractData(){}
 function npRenderPreview(){}
 function npInsertarFila(){}
 function npGenerateNP(){}
+
+// ── Column Mapping ────────────────────────────────────
+const REND_MAPPING_KEY = 'rend_col_mapping';
+const NP_MAPPING_KEY   = 'np_col_mapping';
+
+let mapContext = null; // {target:'rend'|'np', headers:[], fields:[], pendingAction:fn}
+
+function getMapping(key) { return JSON.parse(localStorage.getItem(key)||'null') || {}; }
+function saveMapping(key, m) { localStorage.setItem(key, JSON.stringify(m)); }
+
+// Similarity score between two strings (0-1)
+function strSimilarity(a, b) {
+  a = a.toLowerCase().trim();
+  b = b.toLowerCase().trim();
+  if (a === b) return 1;
+  if (a.includes(b) || b.includes(a)) return 0.8;
+  // Check word overlap
+  const wa = new Set(a.split(/[\s/_\-,./]+/));
+  const wb = new Set(b.split(/[\s/_\-,./]+/));
+  let overlap = 0;
+  wa.forEach(w => { if (w.length > 2 && wb.has(w)) overlap++; });
+  if (overlap > 0) return 0.6 + (overlap * 0.1);
+  // Check if any word is contained
+  for (const w of wa) { if (w.length > 3 && b.includes(w)) return 0.5; }
+  for (const w of wb) { if (w.length > 3 && a.includes(w)) return 0.5; }
+  return 0;
+}
+
+// Auto-suggest mapping: for each Excel header, find best matching field
+function autoSuggestMapping(excelHeaders, availableFields) {
+  const mapping = {}; // colIndex -> fieldName
+  const usedFields = new Set();
+  
+  excelHeaders.forEach((header, colIdx) => {
+    if (!header) return;
+    let bestField = '__none__';
+    let bestScore = 0.3; // minimum threshold
+    
+    // Special cases
+    const h = String(header).toLowerCase();
+    if (h.includes('archivo') || h.includes('file')) { mapping[colIdx] = '__archivo__'; return; }
+    if (h.includes('fecha anal') || h.includes('analysis')) { mapping[colIdx] = '__fecha_analisis__'; return; }
+    if (h.includes('fecha') && (h.includes('hoy') || h.includes('today') || h.includes('solicitud') || h.includes('np'))) {
+      mapping[colIdx] = '__fecha_hoy__'; return;
+    }
+    
+    availableFields.forEach(field => {
+      if (usedFields.has(field)) return;
+      const score = strSimilarity(String(header), field);
+      if (score > bestScore) { bestScore = score; bestField = field; }
+    });
+    
+    if (bestField !== '__none__') { mapping[colIdx] = bestField; usedFields.add(bestField); }
+    else mapping[colIdx] = '__none__';
+  });
+  
+  return mapping;
+}
+
+function mapModalClose() {
+  document.getElementById('mapModal').classList.add('hidden');
+}
+
+function showMappingModal(target, excelHeaders, savedMapping, pendingAction) {
+  // Build available fields list
+  let availableFields = [];
+  if (target === 'rend') {
+    const iaFields = getRendFields().filter(f=>f.name.trim()).map(f=>f.name);
+    const manualFields = getRendManualFields().filter(f=>f.name.trim()).map(f=>f.name);
+    availableFields = [...manualFields, ...iaFields];
+  } else {
+    const iaFields = getNpFields().filter(f=>f.name.trim()).map(f=>f.name);
+    const manualFields = getNpManualFields().filter(f=>f.name.trim()).map(f=>f.name);
+    availableFields = [...manualFields, ...iaFields];
+  }
+  
+  // Generate auto-suggestions if no saved mapping, otherwise use saved
+  const mapping = Object.keys(savedMapping).length > 0 
+    ? savedMapping 
+    : autoSuggestMapping(excelHeaders, availableFields);
+  
+  mapContext = { target, headers: excelHeaders, fields: availableFields, mapping, pendingAction };
+  
+  const specialOpts = [
+    {value:'__none__', label:'— No mapear —'},
+    {value:'__archivo__', label:'📎 Nombre del archivo'},
+    {value:'__fecha_hoy__', label:'📅 Fecha de hoy (automático)'},
+    {value:'__fecha_analisis__', label:'🕐 Fecha de análisis'},
+  ];
+  
+  const body = document.getElementById('mapModalBody');
+  body.innerHTML = excelHeaders.map((header, i) => {
+    const current = mapping[i] || '__none__';
+    const isMatched = current !== '__none__';
+    const allOpts = [
+      ...specialOpts,
+      ...availableFields.map(f => ({value:f, label:f}))
+    ];
+    const options = allOpts.map(o => 
+      `<option value="${esc(o.value)}" ${o.value===current?'selected':''}>${esc(o.label)}</option>`
+    ).join('');
+    return `
+      <div class="map-row">
+        <span class="map-col-idx">${String.fromCharCode(65+i)}</span>
+        <span class="map-col-name" title="${esc(String(header))}">${esc(String(header||'(vacío)'))}</span>
+        <span class="map-arrow">→</span>
+        <select class="map-select ${isMatched?'matched':'unmatched'}" 
+          onchange="mapContext.mapping[${i}]=this.value;this.className='map-select '+(this.value!=='__none__'?'matched':'unmatched')"
+        >${options}</select>
+      </div>`;
+  }).join('');
+  
+  document.getElementById('mapModal').classList.remove('hidden');
+}
+
+async function mapModalConfirm() {
+  const mapKey = mapContext.target === 'rend' ? REND_MAPPING_KEY : NP_MAPPING_KEY;
+  saveMapping(mapKey, mapContext.mapping);
+  mapModalClose();
+  // Execute the pending action with the confirmed mapping
+  await mapContext.pendingAction(mapContext.mapping);
+}
+
+// ── Load Excel headers helper ─────────────────────────
+async function loadExcelHeadersAndShowMapping(target, itemId, siteId) {
+  try {
+    const token = await getMsToken();
+    const sid = siteId || await getSiteId(token);
+    const resp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${sid}/drive/items/${itemId}/content`,
+      {headers:{Authorization:'Bearer '+token}}
+    );
+    if (!resp.ok) return;
+    const ab = await resp.arrayBuffer();
+    const wb = XLSX.read(ab, {type:'array'});
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
+    const headers = (rows[0] || []).map(h => String(h||''));
+    if (!headers.length) return;
+    
+    const mapKey = target === 'rend' ? REND_MAPPING_KEY : NP_MAPPING_KEY;
+    const savedMapping = getMapping(mapKey);
+    
+    showMappingModal(target, headers, savedMapping, async (mapping) => {
+      // This runs after user confirms mapping
+      // Just save - actual insert happens via confirm button
+    });
+  } catch(e) {
+    console.log('Could not load Excel headers:', e.message);
+  }
+}
+
+// ── Insert rows using mapping ──────────────────────────
+function buildRowFromMapping(mapping, excelHeaders, record, manualValues, manualFields, iaFields) {
+  const row = new Array(excelHeaders.length).fill('');
+  Object.entries(mapping).forEach(([colIdx, fieldName]) => {
+    const i = parseInt(colIdx);
+    if (fieldName === '__none__') return;
+    if (fieldName === '__fecha_hoy__') { row[i] = today(); return; }
+    if (fieldName === '__archivo__') { row[i] = record.__archivo__ || ''; return; }
+    if (fieldName === '__fecha_analisis__') { row[i] = record.__fecha_analisis__ || ''; return; }
+    // Check manual fields
+    const mf = manualFields.find(f => f.name === fieldName);
+    if (mf) { row[i] = manualValues[fieldName] || ''; return; }
+    // Check IA fields
+    if (record[fieldName] != null) row[i] = record[fieldName];
+  });
+  return row;
+}
 
 // ── Admin panel ────────────────────────────────────────
 function renderAdmin() {
