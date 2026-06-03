@@ -675,10 +675,8 @@ function rendRemoveManualField(i) { const f=getRendManualFields(); f.splice(i,1)
 function rendAddManualField() { const f=getRendManualFields(); f.push({name:'',desc:''}); saveRendManualFields(f); renderRendManualFields(); }
 
 var fieldListGetters = {
-  'rend-ia':       [getRendFields,          saveRendFields,          renderRendFields],
-  'rend-manual':   [getRendManualFields,    saveRendManualFields,    renderRendManualFields],
-  'np-ia':         [getNpFields,            saveNpFields,            renderNpFields],
-  'np-manual':     [getNpManualFields,      saveNpManualFields,      renderNpManualFields],
+  'rend-ia':       [getRendFields,       saveRendFields,       renderRendFields],
+  'rend-manual':   [getRendManualFields, saveRendManualFields, renderRendManualFields],
   'np-loc-ia':     [()=>npGetIA('np-loc'),  f=>npSaveIA('np-loc',f), ()=>npCfgRenderIA('np-loc')],
   'np-loc-manual': [()=>npGetManual('np-loc'), f=>npSaveManual('np-loc',f), ()=>npCfgRenderManual('np-loc')],
   'np-int-ia':     [()=>npGetIA('np-int'),  f=>npSaveIA('np-int',f), ()=>npCfgRenderIA('np-int')],
