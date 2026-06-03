@@ -2064,6 +2064,135 @@ function npClearAll(pfx) {
 // ── Drag to reorder fields ────────────────────────────
 // duplicate npClearAll removed
 
+// ── Column Mapping ────────────────────────────────────
+var REND_MAPPING_KEY = 'rend_col_mapping';
+var NP_MAPPING_KEY   = 'np_col_mapping';
+var mapContext = null;
+
+function getMapping(key) { return JSON.parse(localStorage.getItem(key)||'null') || {}; }
+function saveMapping(key, m) { localStorage.setItem(key, JSON.stringify(m)); }
+
+function strSimilarity(a, b) {
+  a = String(a||'').toLowerCase().trim();
+  b = String(b||'').toLowerCase().trim();
+  if (a === b) return 1;
+  if (a.includes(b) || b.includes(a)) return 0.8;
+  const wa = new Set(a.split(/[\s\/_\-,.\/]+/));
+  const wb = new Set(b.split(/[\s\/_\-,.\/]+/));
+  let overlap = 0;
+  wa.forEach(w => { if (w.length > 2 && wb.has(w)) overlap++; });
+  if (overlap > 0) return 0.6 + (overlap * 0.1);
+  for (const w of wa) { if (w.length > 3 && b.includes(w)) return 0.5; }
+  for (const w of wb) { if (w.length > 3 && a.includes(w)) return 0.5; }
+  return 0;
+}
+
+function autoSuggestMapping(excelHeaders, availableFields) {
+  const mapping = {};
+  const usedFields = new Set();
+  excelHeaders.forEach((header, colIdx) => {
+    if (!header) return;
+    let bestField = '__none__';
+    let bestScore = 0.3;
+    const h = String(header).toLowerCase();
+    if (h.includes('archivo') || h.includes('file')) { mapping[colIdx] = '__archivo__'; return; }
+    if (h.includes('fecha anal')) { mapping[colIdx] = '__fecha_analisis__'; return; }
+    if ((h.includes('fecha') && (h.includes('hoy') || h.includes('solicitud') || h.includes('np')))) {
+      mapping[colIdx] = '__fecha_hoy__'; return;
+    }
+    availableFields.forEach(field => {
+      if (usedFields.has(field)) return;
+      const score = strSimilarity(String(header), field);
+      if (score > bestScore) { bestScore = score; bestField = field; }
+    });
+    if (bestField !== '__none__') { mapping[colIdx] = bestField; usedFields.add(bestField); }
+    else mapping[colIdx] = '__none__';
+  });
+  return mapping;
+}
+
+function mapModalClose() {
+  document.getElementById('mapModal').classList.add('hidden');
+}
+
+function showMappingModal(target, excelHeaders, savedMapping, pendingAction) {
+  let availableFields = [];
+  if (target === 'rend') {
+    availableFields = [...getRendManualFields().filter(f=>f.name.trim()).map(f=>f.name), ...getRendFields().filter(f=>f.name.trim()).map(f=>f.name)];
+  } else {
+    const pfx = target;
+    availableFields = [...npGetManual(pfx).filter(f=>f.name.trim()).map(f=>f.name), ...npGetIA(pfx).filter(f=>f.name.trim()).map(f=>f.name)];
+  }
+  const mapping = Object.keys(savedMapping).length > 0 ? savedMapping : autoSuggestMapping(excelHeaders, availableFields);
+  mapContext = { target, headers: excelHeaders, fields: availableFields, mapping, pendingAction };
+  const specialOpts = [
+    {value:'__none__', label:'— No mapear —'},
+    {value:'__archivo__', label:'📎 Nombre del archivo'},
+    {value:'__fecha_hoy__', label:'📅 Fecha de hoy (automático)'},
+    {value:'__fecha_analisis__', label:'🕐 Fecha de análisis'},
+  ];
+  const body = document.getElementById('mapModalBody');
+  body.innerHTML = excelHeaders.map((header, i) => {
+    const current = mapping[i] || '__none__';
+    const isMatched = current !== '__none__';
+    const allOpts = [...specialOpts, ...availableFields.map(f => ({value:f, label:f}))];
+    const options = allOpts.map(o => `<option value="${esc(o.value)}" ${o.value===current?'selected':''}>${esc(o.label)}</option>`).join('');
+    return `<div class="map-row">
+      <span class="map-col-idx">${String.fromCharCode(65+i)}</span>
+      <span class="map-col-name" title="${esc(String(header))}">${esc(String(header||'(vacío)'))}</span>
+      <span class="map-arrow">→</span>
+      <select class="map-select ${isMatched?'matched':'unmatched'}"
+        onchange="mapContext.mapping[${i}]=this.value;this.className='map-select '+(this.value!=='__none__'?'matched':'unmatched')"
+      >${options}</select>
+    </div>`;
+  }).join('');
+  document.getElementById('mapModal').classList.remove('hidden');
+}
+
+async function mapModalConfirm() {
+  const mapKey = mapContext.target === 'rend' ? REND_MAPPING_KEY : NP_KEYS[mapContext.target]?.map || NP_MAPPING_KEY;
+  saveMapping(mapKey, mapContext.mapping);
+  mapModalClose();
+  if (mapContext.pendingAction) await mapContext.pendingAction(mapContext.mapping);
+}
+
+async function loadExcelHeadersAndShowMapping(target, itemId, siteId) {
+  try {
+    const token = await getMsToken();
+    const sid = siteId || await getSiteId(token);
+    const resp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${sid}/drive/items/${itemId}/content`,
+      {headers:{Authorization:'Bearer '+token}}
+    );
+    if (!resp.ok) return;
+    const ab = await resp.arrayBuffer();
+    const wb = XLSX.read(ab, {type:'array'});
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
+    const headers = (rows[0] || []).map(h => String(h||''));
+    if (!headers.length) return;
+    const mapKey = target === 'rend' ? REND_MAPPING_KEY : (NP_KEYS[target]?.map || NP_MAPPING_KEY);
+    const savedMapping = getMapping(mapKey);
+    showMappingModal(target, headers, savedMapping, async () => {});
+  } catch(e) {
+    console.log('Could not load Excel headers:', e.message);
+  }
+}
+
+function buildRowFromMapping(mapping, excelHeaders, record, manualValues, manualFields, iaFields) {
+  const row = new Array(excelHeaders.length).fill('');
+  Object.entries(mapping).forEach(([colIdx, fieldName]) => {
+    const i = parseInt(colIdx);
+    if (fieldName === '__none__') return;
+    if (fieldName === '__fecha_hoy__') { row[i] = today(); return; }
+    if (fieldName === '__archivo__') { row[i] = record.__archivo__ || ''; return; }
+    if (fieldName === '__fecha_analisis__') { row[i] = record.__fecha_analisis__ || ''; return; }
+    const mf = manualFields.find(f => f.name === fieldName);
+    if (mf) { row[i] = manualValues[fieldName] || ''; return; }
+    if (record[fieldName] != null) row[i] = record[fieldName];
+  });
+  return row;
+}
+
 // ── Admin panel ────────────────────────────────────────
 function renderAdmin() {
   const el = document.getElementById('adminContent');
