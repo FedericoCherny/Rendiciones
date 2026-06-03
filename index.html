@@ -2640,8 +2640,16 @@ function buildRowFromMapping(mapping, excelHeaders, record, manualValues, manual
     if (fieldName === '__fecha_hoy__') { row[i] = today(); return; }
     if (fieldName === '__archivo__') { row[i] = record.__archivo__ || ''; return; }
     if (fieldName === '__fecha_analisis__') { row[i] = record.__fecha_analisis__ || ''; return; }
+    // Check manual fields (includes values set by user)
     const mf = manualFields.find(f => f.name === fieldName);
     if (mf) { row[i] = manualValues[fieldName] || ''; return; }
+    // Check manualValues directly — covers auto fields (NP Nº, IMPO, etc.)
+    // whose values are stored there by calcAutoFields/npCalcAndApplyAutoFields
+    if (manualValues && manualValues[fieldName] !== undefined && manualValues[fieldName] !== '') {
+      row[i] = manualValues[fieldName];
+      return;
+    }
+    // Fall back to IA extracted data
     if (record[fieldName] != null) row[i] = record[fieldName];
   });
   return row;
