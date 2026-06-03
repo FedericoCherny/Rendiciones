@@ -556,6 +556,30 @@ const REND_COMPROBANTES = 'Operaciones y Mantenimiento/IA/Admin/Comprobantes';
 const NP_FOLDER   = 'Operaciones y Mantenimiento/IA/Compras-COMEX';
 const NP_REGISTRO = 'Operaciones y Mantenimiento/IA/Compras-COMEX/Registro NP prueba.xlsx';
 
+const NP_KEYS = {
+  'np-loc': {
+    ia:     'np_loc_ia_fields',
+    manual: 'np_loc_manual_fields',
+    sp:     'np_loc_sp_defaults',
+    map:    'np_loc_col_mapping',
+    tmpl:   'np_loc_tmpl',
+  },
+  'np-int': {
+    ia:     'np_int_ia_fields',
+    manual: 'np_int_manual_fields',
+    sp:     'np_int_sp_defaults',
+    map:    'np_int_col_mapping',
+    tmpl:   'np_int_tmpl',
+  },
+};
+
+
+const NP_DEFAULTS = {
+  'np-loc': { ia: DEFAULT_NP_LOC_IA, manual: DEFAULT_NP_LOC_MANUAL },
+  'np-int': { ia: DEFAULT_NP_INT_IA, manual: DEFAULT_NP_INT_MANUAL },
+};
+
+
 // ── State ──────────────────────────────────────────────
 let files = [];
 let results = JSON.parse(localStorage.getItem('rend_results') || '[]');
@@ -571,11 +595,13 @@ function getRendFields()  { return JSON.parse(localStorage.getItem(FIELDS_KEY) |
 function saveRendFields(f){ localStorage.setItem(FIELDS_KEY, JSON.stringify(f)); }
 function getNpFields()    { return JSON.parse(localStorage.getItem(NP_FIELDS_KEY) || 'null') || DEFAULT_NP_FIELDS; }
 function saveNpFields(f)  { localStorage.setItem(NP_FIELDS_KEY, JSON.stringify(f)); }
-function getApiKey()      { return localStorage.getItem(API_KEY_KEY) || ''; }
-function saveApiKey(k)    { localStorage.setItem(API_KEY_KEY, k); }
-function getPin()         { return localStorage.getItem(ADMIN_PIN_KEY) || ''; }
-function savePin(p)       { localStorage.setItem(ADMIN_PIN_KEY, p); }
-function saveResults()    { try { localStorage.setItem('rend_results', JSON.stringify(results)); } catch(e){} }
+function getApiKey()            { return localStorage.getItem(API_KEY_KEY) || ''; }
+function saveApiKey(k)          { localStorage.setItem(API_KEY_KEY, k); }
+function getPin()               { return localStorage.getItem(ADMIN_PIN_KEY) || ''; }
+function savePin(p)             { localStorage.setItem(ADMIN_PIN_KEY, p); }
+function getRendManualFields()  { return JSON.parse(localStorage.getItem('rend_manual_fields') || 'null') || []; }
+function saveRendManualFields(f){ localStorage.setItem('rend_manual_fields', JSON.stringify(f)); }
+function saveResults()          { try { localStorage.setItem('rend_results', JSON.stringify(results)); } catch(e){} }
 
 // ── Navigation ─────────────────────────────────────────
 function switchPanel(name) {
@@ -1289,23 +1315,6 @@ async function fbSelectFile(item, relativePath) {
 
 // ── Notas de Pedido — unified multi-prefix ────────────
 // Storage keys per prefix
-const NP_KEYS = {
-  'np-loc': {
-    ia:     'np_loc_ia_fields',
-    manual: 'np_loc_manual_fields',
-    sp:     'np_loc_sp_defaults',
-    map:    'np_loc_col_mapping',
-    tmpl:   'np_loc_tmpl',
-  },
-  'np-int': {
-    ia:     'np_int_ia_fields',
-    manual: 'np_int_manual_fields',
-    sp:     'np_int_sp_defaults',
-    map:    'np_int_col_mapping',
-    tmpl:   'np_int_tmpl',
-  },
-};
-
 const DEFAULT_NP_LOC_IA = [
   { name: 'proveedor',         desc: 'Nombre completo del proveedor' },
   { name: 'contacto',          desc: 'Nombre del contacto o vendedor' },
@@ -1350,11 +1359,6 @@ const DEFAULT_NP_INT_MANUAL = [
   { name: 'Obra / Cliente',    desc: 'Nombre de la obra o cliente' },
   { name: 'Responsable',       desc: 'Iniciales o nombre del responsable' },
 ];
-
-const NP_DEFAULTS = {
-  'np-loc': { ia: DEFAULT_NP_LOC_IA, manual: DEFAULT_NP_LOC_MANUAL },
-  'np-int': { ia: DEFAULT_NP_INT_IA, manual: DEFAULT_NP_INT_MANUAL },
-};
 
 function npGetIA(pfx)     { return JSON.parse(localStorage.getItem(NP_KEYS[pfx].ia)    || 'null') || NP_DEFAULTS[pfx].ia; }
 function npSaveIA(pfx,f)  { localStorage.setItem(NP_KEYS[pfx].ia, JSON.stringify(f)); }
@@ -1916,44 +1920,10 @@ function npClearAll(pfx) {
 }
 
 // ── Legacy stubs ──────────────────────────────────────
-function npHandlePDF(){}
-function npExtractData(){}
-function npRenderPreview(){}
-function npInsertarFila(){}
-function npGenerateNP(){}
-function npGenerateAllNP(){}
-function npCargarUltimoNP(){}
-function npShowModal_old(){}
-// Legacy compatibility
-const npExtractedList = [];
-const npManualValues = {};
-const npFiles = [];
+// legacy stubs removed
 
 // ── Drag to reorder fields ────────────────────────────
-// ── NP Clear ──────────────────────────────────────────
-function npClearAll() {
-  if (!confirm('¿Borrar todos los archivos y resultados de NP?')) return;
-  npFiles = [];
-  npExtractedList = [];
-  npManualValues = {};
-  document.getElementById('np-file-list').innerHTML = '';
-  document.getElementById('np-manual-fields-inputs').innerHTML = '';
-  document.getElementById('np-status-bar').innerHTML = '';
-  document.getElementById('np-preview-area').innerHTML = '';
-  document.getElementById('np-gen-status').innerHTML = '';
-  document.getElementById('np-num1').className = 'step-num active';
-  document.getElementById('np-num1').textContent = '1';
-  document.getElementById('np-num2').className = 'step-num';
-  document.getElementById('np-num2').textContent = '2';
-  document.getElementById('np-num3').className = 'step-num';
-  document.getElementById('np-num3').textContent = '3';
-  document.getElementById('np-step2').classList.add('np-step-disabled');
-  document.getElementById('np-step3').classList.add('np-step-disabled');
-  document.getElementById('np-extract-btn').disabled = true;
-  document.getElementById('np-btn-registro').disabled = true;
-  document.getElementById('np-btn-np').disabled = true;
-  document.getElementById('np-file-input').value = '';
-}
+// duplicate npClearAll removed
 
 // ── Admin panel ────────────────────────────────────────
 function renderAdmin() {
