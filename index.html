@@ -1611,128 +1611,241 @@ async function npDescargarNP(pfx) {
   const state = npState[pfx];
   if (!state.extracted.length) { alert('Primero extraé los datos con IA.'); return; }
 
+  // Ask for destination folder (with last used pre-loaded)
+  const destKey = pfx + '_np_dest';
+  const lastDest = JSON.parse(localStorage.getItem(destKey) || 'null');
+
+  // Show destination folder picker modal
+  await npPickDestAndGenerate(pfx, tmpl, state, destKey, lastDest);
+}
+
+async function npPickDestAndGenerate(pfx, tmpl, state, destKey, lastDest) {
+  // Use the existing file browser to pick a folder
+  return new Promise((resolve) => {
+    // Show a simple confirm dialog with last folder info
+    const lastLabel = lastDest ? lastDest.label : 'No seleccionada';
+    const useLast = lastDest && confirm(
+      `Carpeta destino:\n📁 ${lastLabel}\n\n¿Usar esta carpeta?\n\nOK = Usar esta\nCancelar = Elegir otra`
+    );
+
+    if (useLast) {
+      npGenerateNPFiles(pfx, tmpl, state, destKey, lastDest).then(resolve);
+    } else {
+      // Open folder browser
+      fbOpen('folder', pfx + '-np-dest');
+      // Override the select button to capture the selection
+      const origSelect = fbSelectCurrent;
+      fbSelectCurrent = function() {
+        const btn = document.getElementById('fb-select-btn');
+        const path = btn.dataset.path;
+        const itemId = btn.dataset.id;
+        const label = (fbCurrentSiteName||'') + (path ? ' › ' + path.replace(/\//g,' › ') : '');
+        const dest = { path, id: itemId, siteId: fbCurrentSiteId, label };
+        localStorage.setItem(destKey, JSON.stringify(dest));
+        fbSelectCurrent = origSelect;
+        fbClose();
+        npGenerateNPFiles(pfx, tmpl, state, destKey, dest).then(resolve);
+      };
+    }
+  });
+}
+
+async function npGenerateNPFiles(pfx, tmpl, state, destKey, dest) {
   const btn = document.getElementById(pfx+'-btn-np');
-  btn.disabled=true; btn.textContent='\u23F3 Descargando plantilla...';
-  showMsg(pfx+'-gen-status','loading','Descargando plantilla de SharePoint...');
+  const origText = btn.textContent;
+  btn.disabled = true;
 
   try {
     const token = await getMsToken();
-    const sid = tmpl.siteId || await getSiteId(token);
-    let dlResp;
-    if (tmpl.id) {
-      dlResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${sid}/drive/items/${tmpl.id}/content`,{headers:{Authorization:'Bearer '+token}});
-    } else {
-      const ep = tmpl.path.split('/').map(encodeURIComponent).join('/');
-      dlResp = await fetch(`https://graph.microsoft.com/v1.0/sites/${sid}/drive/root:/${ep}:/content`,{headers:{Authorization:'Bearer '+token}});
-    }
-    if (!dlResp.ok) throw new Error('No se pudo descargar la plantilla: HTTP '+dlResp.status);
-    const ab = await dlResp.arrayBuffer();
-
-    // Fill one file per extracted record
+    const tmplSiteId = tmpl.siteId || await getSiteId(token);
+    const destSiteId = dest.siteId || tmplSiteId;
     const manualFields = npGetManual(pfx);
     const iaFields = npGetIA(pfx).filter(f=>f.name.trim());
 
     for (let idx=0; idx<state.extracted.length; idx++) {
       const d = state.extracted[idx];
-      const wb = XLSX.read(ab, {type:'array', cellStyles:true});
-      const ws = wb.Sheets[wb.SheetNames[0]];
 
-      // Helper to set cell value preserving style
-      const setCell = (addr, val) => {
-        if (!ws[addr]) ws[addr] = {};
-        ws[addr].v = val;
-        ws[addr].t = typeof val === 'number' ? 'n' : 's';
+      const npNumField  = manualFields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
+      const impField    = manualFields.find(f=>f.name.toLowerCase().includes('imp'));
+      const obraField   = manualFields.find(f=>f.name.toLowerCase().includes('obra'));
+      const respField   = manualFields.find(f=>f.name.toLowerCase().includes('resp'));
+      const supervField = manualFields.find(f=>f.name.toLowerCase().includes('superv'));
+      const lugarField  = manualFields.find(f=>f.name.toLowerCase().includes('lugar'));
+
+      const npNum  = npNumField  ? (state.manualValues[npNumField.name]||'')  : '';
+      const impNum = impField    ? (state.manualValues[impField.name]||'')    : '';
+      const obra   = obraField   ? (state.manualValues[obraField.name]||'')   : '';
+      const resp   = respField   ? (state.manualValues[respField.name]||'')   : '';
+      const superv = supervField ? (state.manualValues[supervField.name]||'') : '';
+      const lugar  = lugarField  ? (state.manualValues[lugarField.name]||'')  : '';
+
+      const fileName = `NP_${npNum||idx+1}_${(d.proveedor||'prov').split(' ')[0]}_${new Date().toISOString().slice(0,10)}.xlsx`;
+      btn.textContent = `⏳ Copiando plantilla (${idx+1}/${state.extracted.length})...`;
+      showMsg(pfx+'-gen-status','loading',`Copiando plantilla para ${d.proveedor||''}...`);
+
+      // Step 1: Copy template to destination folder in SharePoint
+      let copyBody;
+      if (dest.id) {
+        copyBody = { name: fileName, parentReference: { driveId: undefined, id: dest.id } };
+      } else {
+        const destPath = dest.path || '';
+        copyBody = { name: fileName, parentReference: { path: `/drive/root:/${destPath}` } };
+      }
+
+      // Use Graph copy API
+      const copyUrl = tmpl.id
+        ? `https://graph.microsoft.com/v1.0/sites/${tmplSiteId}/drive/items/${tmpl.id}/copy`
+        : `https://graph.microsoft.com/v1.0/sites/${tmplSiteId}/drive/root:/${tmpl.path.split('/').map(encodeURIComponent).join('/')}:/copy`;
+
+      // Need destination drive id
+      const driveResp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${destSiteId}/drive`,
+        {headers:{Authorization:'Bearer '+token}}
+      );
+      if (!driveResp.ok) throw new Error('No se pudo obtener el drive destino');
+      const driveData = await driveResp.json();
+      const destDriveId = driveData.id;
+
+      if (dest.id) {
+        copyBody.parentReference = { driveId: destDriveId, id: dest.id };
+      } else {
+        copyBody.parentReference = { driveId: destDriveId, path: `/root:/${dest.path || ''}` };
+      }
+
+      const copyResp = await fetch(copyUrl, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer '+token, 'Content-Type': 'application/json', Prefer: 'respond-async' },
+        body: JSON.stringify(copyBody)
+      });
+
+      if (!copyResp.ok) throw new Error('Error al copiar plantilla: HTTP '+copyResp.status);
+
+      // Step 2: Poll for copy completion (Location header has monitor URL)
+      btn.textContent = `⏳ Esperando copia...`;
+      let copiedItemId = null;
+      const monitorUrl = copyResp.headers.get('Location');
+      if (monitorUrl) {
+        for (let attempt=0; attempt<30; attempt++) {
+          await new Promise(r=>setTimeout(r,1500));
+          const pollResp = await fetch(monitorUrl);
+          if (!pollResp.ok) break;
+          const pollData = await pollResp.json();
+          if (pollData.status === 'completed') {
+            copiedItemId = pollData.resourceId;
+            break;
+          }
+          if (pollData.status === 'failed') throw new Error('Falló la copia de la plantilla');
+        }
+      }
+
+      // If no monitor URL (sync copy), find the file we just created
+      if (!copiedItemId) {
+        await new Promise(r=>setTimeout(r,2000));
+        // Search for file in destination
+        const searchUrl = dest.id
+          ? `https://graph.microsoft.com/v1.0/sites/${destSiteId}/drive/items/${dest.id}/children?$filter=name eq '${encodeURIComponent(fileName)}'`
+          : `https://graph.microsoft.com/v1.0/sites/${destSiteId}/drive/root:/${(dest.path||'').split('/').map(encodeURIComponent).join('/')}:/children`;
+        const searchResp = await fetch(searchUrl, {headers:{Authorization:'Bearer '+token}});
+        if (searchResp.ok) {
+          const searchData = await searchResp.json();
+          const found = (searchData.value||[]).find(f=>f.name===fileName);
+          if (found) copiedItemId = found.id;
+        }
+      }
+
+      if (!copiedItemId) throw new Error('No se pudo encontrar el archivo copiado en SharePoint');
+
+      // Step 3: Update cells via Graph Excel API
+      btn.textContent = `⏳ Insertando datos...`;
+      showMsg(pfx+'-gen-status','loading','Insertando datos en el Excel...');
+
+      const excelBase = `https://graph.microsoft.com/v1.0/sites/${destSiteId}/drive/items/${copiedItemId}/workbook/worksheets('Hoja1')/`;
+
+      const setCellVal = async (addr, val) => {
+        const cellUrl = excelBase + `range(address='${addr}')`;
+        await fetch(cellUrl, {
+          method: 'PATCH',
+          headers: { Authorization: 'Bearer '+token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [[val]] })
+        });
       };
 
-      const npNumField = manualFields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
-      const impField   = manualFields.find(f=>f.name.toLowerCase().includes('imp'));
-      const obraField  = manualFields.find(f=>f.name.toLowerCase().includes('obra'));
-      const respField  = manualFields.find(f=>f.name.toLowerCase().includes('resp'));
-      const supervField= manualFields.find(f=>f.name.toLowerCase().includes('superv'));
-      const lugarField = manualFields.find(f=>f.name.toLowerCase().includes('lugar'));
-
-      const npNum  = npNumField ? (state.manualValues[npNumField.name]||'') : '';
-      const impNum = impField   ? (state.manualValues[impField.name]||'')   : '';
-      const obra   = obraField  ? (state.manualValues[obraField.name]||'')  : '';
-      const resp   = respField  ? (state.manualValues[respField.name]||'')  : '';
-      const superv = supervField? (state.manualValues[supervField.name]||''): '';
-      const lugar  = lugarField ? (state.manualValues[lugarField.name]||'') : '';
-
       if (pfx === 'np-loc') {
-        // LOCALES template mapping
-        setCell('F1', npNum ? 'NOTA DE PEDIDO N\u00ba ' + npNum : '');
-        setCell('C3', (d.proveedor||''));
-        setCell('D3', (d.contacto||''));
-        setCell('D4', today());
-        setCell('D5', '1');
-        setCell('D6', (d.moneda||''));
-        // Items (rows 8-20, cols A=item, B=cant, C-D=desc, E=p_unit, F=p_total formula)
+        await setCellVal('E1', npNum ? `NOTA DE PEDIDO Nº ${npNum}` : '');
+        await setCellVal('C3', d.proveedor||'');
+        await setCellVal('D3', d.contacto||'');
+        await setCellVal('D4', today());
+        await setCellVal('D6', d.moneda||'');
         const items = d.items||[];
         for (let r=0; r<Math.min(items.length,13); r++) {
           const row = 8+r;
-          setCell(`A${row}`, Number(items[r].item)||r+1);
-          setCell(`B${row}`, Number(items[r].cant)||1);
-          setCell(`C${row}`, items[r].descripcion||'');
-          setCell(`E${row}`, Number(items[r].p_unitario)||0);
-          // F col has formula - update to use values
-          ws[`F${row}`] = {v: Number(items[r].p_total)||0, t:'n'};
+          await setCellVal(`A${row}`, Number(items[r].item)||r+1);
+          await setCellVal(`B${row}`, Number(items[r].cant)||1);
+          await setCellVal(`C${row}`, items[r].descripcion||'');
+          await setCellVal(`E${row}`, Number(items[r].p_unitario)||0);
         }
-        // Totals
         const subtotal = items.reduce((s,i)=>s+Number(i.p_total||0),0);
-        setCell('F21', subtotal);
-        setCell('F23', subtotal); // subtotal after bonif
-        setCell('F25', subtotal); // total
-        // Footer
-        setCell('A33', (d.plazo_pago||''));
-        setCell('A35', (d.plazo_entrega||''));
-        if (lugar) setCell('A37', lugar);
-        if (obra)  { setCell('C38','Obra: '); setCell('C39', obra); }
-        if (resp)  { setCell('E38','Generada por: '); setCell('E39', resp); }
-        if (superv){ setCell('F39', superv); }
-        if (d.observaciones) setCell('A38', d.observaciones);
+        await setCellVal('F21', subtotal);
+        await setCellVal('F23', subtotal);
+        await setCellVal('F25', subtotal);
+        await setCellVal('A33', d.plazo_pago||'');
+        await setCellVal('A35', d.plazo_entrega||'');
+        if (lugar)  await setCellVal('A37', lugar);
+        if (obra)   await setCellVal('C39', obra);
+        if (resp)   await setCellVal('E39', resp);
+        if (superv) await setCellVal('F39', superv);
+        if (d.observaciones) await setCellVal('A38', d.observaciones);
       } else {
-        // INTERNACIONALES template mapping
-        setCell('D1', 'NOTA DE PEDIDO N\u00ba ' + npNum);
-        setCell('D2', 'IMP ' + impNum);
-        setCell('C3', (d.proveedor||''));
-        setCell('D4', (d.atencion||''));
-        setCell('D5', today());
-        setCell('D6', (d.moneda||''));
-        // Items rows 10-18
+        await setCellVal('E1', `NOTA DE PEDIDO Nº ${npNum}`);
+        await setCellVal('F2', `IMP ${impNum}`);
+        await setCellVal('C3', d.proveedor||'');
+        await setCellVal('D3', d.atencion||'');
+        await setCellVal('D5', today());
+        await setCellVal('D6', d.moneda||'');
         const items = d.items||[];
         for (let r=0; r<Math.min(items.length,9); r++) {
           const row = 10+r;
-          setCell(`A${row}`, Number(items[r].item)||r+1);
-          setCell(`B${row}`, Number(items[r].cant)||1);
-          setCell(`C${row}`, items[r].descripcion||'');
-          setCell(`D${row}`, Number(items[r].p_unitario)||0);
-          ws[`E${row}`] = {v: Number(items[r].p_total)||0, t:'n'};
+          await setCellVal(`A${row}`, Number(items[r].item)||r+1);
+          await setCellVal(`B${row}`, Number(items[r].cant)||1);
+          await setCellVal(`C${row}`, items[r].descripcion||'');
+          await setCellVal(`D${row}`, Number(items[r].p_unitario)||0);
         }
         const subtotal = items.reduce((s,i)=>s+Number(i.p_total||0),0);
-        ws['E19'] = {v:subtotal,t:'n'};
-        ws['E20'] = {v:subtotal,t:'n'};
-        setCell('C16', 'Ref. Quotation No: '+(d.ref_no||''));
-        setCell('B24', (d.plazo_pago||''));
-        setCell('B26', (d.plazo_entrega||''));
-        setCell('B28', (d.incoterm||''));
-        if (d.observaciones) setCell('B30', d.observaciones);
-        if (resp) setCell('D34', resp);
+        await setCellVal('E19', subtotal);
+        await setCellVal('E20', subtotal);
+        await setCellVal('B24', d.plazo_pago||'');
+        await setCellVal('B26', d.plazo_entrega||'');
+        await setCellVal('B28', d.incoterm||'');
+        if (d.observaciones) await setCellVal('B30', d.observaciones);
+        if (resp) await setCellVal('D34', resp);
       }
 
-      const wbOut = XLSX.write(wb, {type:'array', bookType:'xlsx'});
-      const blob = new Blob([wbOut], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-      const url = URL.createObjectURL(blob);
+      // Step 4: Convert to PDF via Graph
+      btn.textContent = `⏳ Convirtiendo a PDF...`;
+      showMsg(pfx+'-gen-status','loading','Convirtiendo a PDF...');
+      await new Promise(r=>setTimeout(r,1000)); // let Excel API settle
+
+      const pdfResp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${destSiteId}/drive/items/${copiedItemId}/content?format=pdf`,
+        {headers:{Authorization:'Bearer '+token}}
+      );
+      if (!pdfResp.ok) throw new Error('Error al convertir a PDF: HTTP '+pdfResp.status);
+
+      const pdfBlob = await pdfResp.blob();
+      const pdfUrl = URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `NP_${npNum||idx+1}_${(d.proveedor||'').split(' ')[0]}.xlsx`;
+      a.href = pdfUrl;
+      a.download = fileName.replace('.xlsx','.pdf');
       a.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(pdfUrl);
+
+      showMsg(pfx+'-gen-status','success',`✓ NP generada y descargada como PDF. El Excel queda guardado en SharePoint.`);
     }
-    showMsg(pfx+'-gen-status','success',`\u2713 ${state.extracted.length} NP(s) descargadas con la plantilla de SharePoint`);
   } catch(e) {
-    showMsg(pfx+'-gen-status','error','\u2715 Error: '+e.message);
+    showMsg(pfx+'-gen-status','error','✕ Error: '+e.message);
   } finally {
-    btn.disabled=false; btn.textContent='\uD83D\uDCC4 Descargar NP (desde plantilla SharePoint)';
+    btn.textContent = origText;
+    btn.disabled = false;
   }
 }
 
