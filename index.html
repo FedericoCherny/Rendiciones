@@ -630,6 +630,27 @@ function rendUpdateField(i, key, val) { const f=getRendFields(); f[i][key]=val; 
 function rendRemoveField(i) { const f=getRendFields(); f.splice(i,1); saveRendFields(f); renderRendFields(); }
 function rendAddField() { const f=getRendFields(); f.push({name:'',desc:''}); saveRendFields(f); renderRendFields(); }
 
+function renderRendManualFields() {
+  const fields = getRendManualFields();
+  const el = document.getElementById('rendManualFieldList');
+  if (!el) return;
+  el.innerHTML = fields.map((f,i) => `
+    <div class="field-row" draggable="true"
+      ondragstart="dragStart(event,'rend-manual',${i})"
+      ondragover="dragOver(event)" ondragleave="dragLeave(event)"
+      ondrop="dragDrop(event,'rend-manual',${i})" ondragend="dragEnd(event)">
+      <div class="field-row-top">
+        <span class="drag-handle" title="Arrastrar">&#8286;</span>
+        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="rendUpdateManualField(${i},'name',this.value)" />
+        <button class="remove-btn" onclick="rendRemoveManualField(${i})">&#x2715;</button>
+      </div>
+      <input class="desc-input" value="${esc(f.desc||'')}" placeholder="Descripción (opcional)" oninput="rendUpdateManualField(${i},'desc',this.value)" />
+    </div>`).join('');
+}
+function rendUpdateManualField(i, key, val) { const f=getRendManualFields(); f[i][key]=val; saveRendManualFields(f); }
+function rendRemoveManualField(i) { const f=getRendManualFields(); f.splice(i,1); saveRendManualFields(f); renderRendManualFields(); }
+function rendAddManualField() { const f=getRendManualFields(); f.push({name:'',desc:''}); saveRendManualFields(f); renderRendManualFields(); }
+
 function renderNpFields() {
   const fields = getNpFields();
   document.getElementById('npFieldList').innerHTML = fields.map((f, i) => `
@@ -1352,10 +1373,10 @@ function npCfgRenderIA(pfx) {
       ondrop="dragDrop(event,'${pfx}-ia',${i})" ondragend="dragEnd(event)">
       <div class="field-row-top">
         <span class="drag-handle">&#8286;</span>
-        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="npGetIA('${pfx}')[${i}].name=this.value;npSaveIA('${pfx}',npGetIA('${pfx}'))" />
+        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="npUpdateIAField('${pfx}',${i},'name',this.value)" />
         <button class="remove-btn" onclick="npCfgRemoveIA('${pfx}',${i})">&#x2715;</button>
       </div>
-      <input class="desc-input" value="${esc(f.desc||'')}" placeholder="Instrucción para la IA" oninput="npGetIA('${pfx}')[${i}].desc=this.value;npSaveIA('${pfx}',npGetIA('${pfx}'))" />
+      <input class="desc-input" value="${esc(f.desc||'')}" placeholder="Instrucción para la IA" oninput="npUpdateIAField('${pfx}',${i},'desc',this.value)" />
     </div>`).join('');
 }
 
@@ -1370,13 +1391,15 @@ function npCfgRenderManual(pfx) {
       ondrop="dragDrop(event,'${pfx}-manual',${i})" ondragend="dragEnd(event)">
       <div class="field-row-top">
         <span class="drag-handle">&#8286;</span>
-        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="npGetManual('${pfx}')[${i}].name=this.value;npSaveManual('${pfx}',npGetManual('${pfx}'))" />
+        <input value="${esc(f.name)}" placeholder="Nombre del campo" oninput="npUpdateManualField('${pfx}',${i},'name',this.value)" />
         <button class="remove-btn" onclick="npCfgRemoveManual('${pfx}',${i})">&#x2715;</button>
       </div>
-      <input class="desc-input" value="${esc(f.desc||'')}" placeholder="Descripción (opcional)" oninput="npGetManual('${pfx}')[${i}].desc=this.value;npSaveManual('${pfx}',npGetManual('${pfx}'))" />
+      <input class="desc-input" value="${esc(f.desc||'')}" placeholder="Descripción (opcional)" oninput="npUpdateManualField('${pfx}',${i},'desc',this.value)" />
     </div>`).join('');
 }
 
+function npUpdateIAField(pfx,i,key,val)     { const f=npGetIA(pfx); f[i][key]=val; npSaveIA(pfx,f); }
+function npUpdateManualField(pfx,i,key,val) { const f=npGetManual(pfx); f[i][key]=val; npSaveManual(pfx,f); }
 function npCfgRemoveIA(pfx,i)     { const f=npGetIA(pfx);f.splice(i,1);npSaveIA(pfx,f);npCfgRenderIA(pfx); }
 function npCfgAddIA(pfx)          { const f=npGetIA(pfx);f.push({name:'',desc:''});npSaveIA(pfx,f);npCfgRenderIA(pfx); }
 function npCfgRemoveManual(pfx,i) { const f=npGetManual(pfx);f.splice(i,1);npSaveManual(pfx,f);npCfgRenderManual(pfx); }
@@ -1927,7 +1950,8 @@ function dragDrop(event, listKey, dropIdx) {
   if (dragSrcList !== listKey || dragSrcIdx === null || dragSrcIdx === dropIdx) return;
 
   const [getter, setter, renderer] = fieldListGetters[listKey];
-  const fields = getter();
+  // Always get fresh copy, modify, then save
+  const fields = JSON.parse(JSON.stringify(getter())); // deep copy
   const el = event.currentTarget;
   const rect = el.getBoundingClientRect();
   const mid = rect.top + rect.height / 2;
