@@ -373,6 +373,13 @@
         <div id="rendManualFieldList"></div>
         <button class="btn btn-secondary" onclick="rendAddManualField()" style="margin-top:4px">+ Agregar campo manual</button>
       </div>
+      <div class="card">
+        <div class="card-label">Campos automáticos — Rendiciones</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Se calculan automáticamente con una fórmula antes de exportar.</p>
+        <div id="rend-auto-field-list"></div>
+        <button class="btn btn-secondary" onclick="autoAddField('rend')" style="margin-top:4px">+ Agregar campo automático</button>
+        <p class="hint" style="margin-top:8px">Fórmulas: <code>hoy</code> · <code>ultimo+1</code> (lee Excel) · <code>=texto</code> (valor fijo)</p>
+      </div>
     </div>
 
     <!-- ═══ PANEL: Config NP Locales ═══ -->
@@ -390,8 +397,15 @@
         <button class="btn btn-secondary" onclick="npCfgAddManual('np-loc')" style="margin-top:4px">+ Agregar campo manual</button>
       </div>
       <div class="card">
+        <div class="card-label">Campos automáticos — NP Locales</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Se calculan en el Paso 0 antes de extraer con IA.</p>
+        <div id="np-loc-auto-field-list"></div>
+        <button class="btn btn-secondary" onclick="autoAddField('np-loc')" style="margin-top:4px">+ Agregar campo automático</button>
+        <p class="hint" style="margin-top:8px">Fórmulas: <code>hoy</code> · <code>ultimo+1</code> (lee Excel) · <code>=texto</code> (valor fijo)</p>
+      </div>
+      <div class="card">
         <div class="card-label">Plantilla NP en SharePoint</div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Seleccioná el archivo .xlsx de plantilla. La app lo descargará, completará y te lo devolverá.</p>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Seleccioná el archivo .xlsx de plantilla.</p>
         <div class="sp-selected" style="margin-bottom:8px">
           <span id="np-loc-tmpl-label">Sin seleccionar</span>
           <button class="sp-browse-btn" onclick="fbOpen('file','np-loc-tmpl')">Seleccionar</button>
@@ -415,8 +429,15 @@
         <button class="btn btn-secondary" onclick="npCfgAddManual('np-int')" style="margin-top:4px">+ Agregar campo manual</button>
       </div>
       <div class="card">
+        <div class="card-label">Campos automáticos — NP Internacionales</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Se calculan en el Paso 0 antes de extraer con IA.</p>
+        <div id="np-int-auto-field-list"></div>
+        <button class="btn btn-secondary" onclick="autoAddField('np-int')" style="margin-top:4px">+ Agregar campo automático</button>
+        <p class="hint" style="margin-top:8px">Fórmulas: <code>hoy</code> · <code>ultimo+1</code> (lee Excel) · <code>=texto</code> (valor fijo)</p>
+      </div>
+      <div class="card">
         <div class="card-label">Plantilla NP en SharePoint</div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Seleccioná el archivo .xlsx de plantilla. La app lo descargará, completará y te lo devolverá.</p>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Seleccioná el archivo .xlsx de plantilla.</p>
         <div class="sp-selected" style="margin-bottom:8px">
           <span id="np-int-tmpl-label">Sin seleccionar</span>
           <button class="sp-browse-btn" onclick="fbOpen('file','np-int-tmpl')">Seleccionar</button>
@@ -656,9 +677,9 @@ function switchPanel(name) {
   document.getElementById('panel-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'admin') renderAdmin();
-  if (name === 'cfg-rend') { renderRendFields(); renderRendManualFields(); }
-  if (name === 'cfg-np-loc') npCfgRender('np-loc');
-  if (name === 'cfg-np-int') npCfgRender('np-int');
+  if (name === 'cfg-rend') { renderRendFields(); renderRendManualFields(); renderAutoFields('rend'); }
+  if (name === 'cfg-np-loc') { npCfgRender('np-loc'); renderAutoFields('np-loc'); }
+  if (name === 'cfg-np-int') { npCfgRender('np-int'); renderAutoFields('np-int'); }
   if (name === 'rend') renderRendResults();
   if (name === 'np-loc' || name === 'np-int') npStep0Init(name);
 }
@@ -2141,6 +2162,156 @@ function npClearAll(pfx) {
 // ── Drag to reorder fields ────────────────────────────
 // duplicate npClearAll removed
 
+// ── Automatic Fields ──────────────────────────────────
+// Storage keys
+const AUTO_KEYS = {
+  'rend':   'rend_auto_fields',
+  'np-loc': 'np_loc_auto_fields',
+  'np-int': 'np_int_auto_fields',
+};
+
+// Default auto fields - NP Nº migrated here from manual
+const DEFAULT_AUTO = {
+  'rend':   [],
+  'np-loc': [
+    { name: 'NP Nº', formula: 'ultimo+1', desc: 'Lee el último NP del Registro y suma 1' },
+  ],
+  'np-int': [
+    { name: 'NP Nº',  formula: 'ultimo+1', desc: 'Lee el último NP del Registro y suma 1' },
+    { name: 'IMPO Nº', formula: 'ultimo+1', desc: 'Lee el último IMPO del Registro y suma 1' },
+  ],
+};
+
+function getAutoFields(target) {
+  return JSON.parse(localStorage.getItem(AUTO_KEYS[target]) || 'null') || DEFAULT_AUTO[target] || [];
+}
+function saveAutoFields(target, fields) {
+  localStorage.setItem(AUTO_KEYS[target], JSON.stringify(fields));
+}
+
+// Render auto fields in config panel
+function renderAutoFields(target) {
+  const fields = getAutoFields(target);
+  const elId = target === 'rend' ? 'rend-auto-field-list' : target + '-auto-field-list';
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = fields.map((f, i) => `
+    <div class="field-row" style="border-left:3px solid var(--blue)">
+      <div class="field-row-top">
+        <div class="reorder-btns">
+          <button class="reorder-btn" onclick="autoReorder('${target}',${i},-1)" ${i===0?'disabled':''}>&#9650;</button>
+          <button class="reorder-btn" onclick="autoReorder('${target}',${i},1)" ${i===fields.length-1?'disabled':''}>&#9660;</button>
+        </div>
+        <input value="${esc(f.name)}" placeholder="Nombre del campo" style="flex:1" oninput="autoUpdate('${target}',${i},'name',this.value)" />
+        <select style="padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-family:inherit;font-size:13px" onchange="autoUpdate('${target}',${i},'formula',this.value)">
+          <option value="ultimo+1" ${f.formula==='ultimo+1'?'selected':''}>ultimo+1</option>
+          <option value="hoy"      ${f.formula==='hoy'?'selected':''}>hoy</option>
+          <option value="fijo"     ${f.formula==='fijo'?'selected':''}>= valor fijo</option>
+        </select>
+        <button class="remove-btn" onclick="autoRemove('${target}',${i})">&#x2715;</button>
+      </div>
+      ${f.formula==='fijo' ? `<input class="desc-input" value="${esc(f.value||'')}" placeholder="Valor fijo" oninput="autoUpdate('${target}',${i},'value',this.value)" />` : `<div style="font-size:12px;color:var(--text3);padding:4px 0 0 48px">${esc(f.desc||'')}</div>`}
+    </div>`).join('');
+}
+
+function autoUpdate(target, i, key, val) {
+  const fields = getAutoFields(target);
+  fields[i][key] = val;
+  saveAutoFields(target, fields);
+  renderAutoFields(target);
+}
+function autoRemove(target, i) {
+  const fields = getAutoFields(target);
+  fields.splice(i, 1);
+  saveAutoFields(target, fields);
+  renderAutoFields(target);
+}
+function autoReorder(target, i, dir) {
+  const fields = getAutoFields(target);
+  const j = i + dir;
+  if (j < 0 || j >= fields.length) return;
+  [fields[i], fields[j]] = [fields[j], fields[i]];
+  saveAutoFields(target, fields);
+  renderAutoFields(target);
+}
+function autoAddField(target) {
+  const fields = getAutoFields(target);
+  fields.push({ name: '', formula: 'ultimo+1', desc: '', value: '' });
+  saveAutoFields(target, fields);
+  renderAutoFields(target);
+}
+
+// Calculate automatic field values
+// For NP: called in step0 after Excel is loaded
+// For Rend: called before export
+async function calcAutoFields(target, excelRows, excelHeaders, savedMapping) {
+  const fields = getAutoFields(target);
+  const values = {};
+
+  for (const f of fields) {
+    if (!f.name.trim()) continue;
+    if (f.formula === 'hoy') {
+      values[f.name] = today();
+    } else if (f.formula === 'fijo') {
+      values[f.name] = f.value || '';
+    } else if (f.formula === 'ultimo+1') {
+      // Find which column this field is mapped to
+      let colIdx = null;
+      if (savedMapping && Object.keys(savedMapping).length > 0) {
+        const entry = Object.entries(savedMapping).find(([col, field]) => field === f.name);
+        if (entry) colIdx = parseInt(entry[0]);
+      }
+      // Fallback: search headers by name similarity
+      if (colIdx === null && excelHeaders) {
+        colIdx = excelHeaders.findIndex(h => strSimilarity(String(h||''), f.name) > 0.5);
+      }
+      if (colIdx !== null && colIdx >= 0 && excelRows) {
+        let ultimo = 0;
+        for (let i = 1; i < excelRows.length; i++) {
+          const v = excelRows[i][colIdx];
+          if (v && !isNaN(parseInt(v))) ultimo = Math.max(ultimo, parseInt(v));
+        }
+        values[f.name] = String(ultimo + 1);
+      } else {
+        values[f.name] = ''; // no Excel available (e.g. rend local export)
+      }
+    }
+  }
+  return values;
+}
+
+// For NP: load Excel and compute auto values during step0
+async function npCalcAndApplyAutoFields(pfx, itemId, siteId) {
+  try {
+    const token = await getMsToken();
+    const sid = siteId || await getSiteId(token);
+    const resp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${sid}/drive/items/${itemId}/content`,
+      {headers:{Authorization:'Bearer '+token}}
+    );
+    if (!resp.ok) return;
+    const ab = await resp.arrayBuffer();
+    const wb = XLSX.read(ab, {type:'array'});
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
+    const headers = (rows[0]||[]).map(h=>String(h||''));
+    const mapKey = NP_KEYS[pfx]?.map || NP_MAPPING_KEY;
+    const savedMapping = getMapping(mapKey);
+
+    const autoValues = await calcAutoFields(pfx, rows, headers, savedMapping);
+    // Apply to state
+    Object.assign(npState[pfx].manualValues, autoValues);
+    // Show preview in step0
+    const autoFields = getAutoFields(pfx);
+    const preview = document.getElementById(pfx+'-np-num-preview');
+    if (preview && autoFields.length > 0) {
+      preview.innerHTML = autoFields.filter(f=>f.name&&autoValues[f.name])
+        .map(f=>`<span style="margin-right:12px">→ ${esc(f.name)}: <strong>${esc(autoValues[f.name])}</strong></span>`)
+        .join('');
+    }
+    npRenderManualInputs(pfx);
+  } catch(e) { console.log('autoFields error:', e.message); }
+}
+
 // ── NP Step 0 ─────────────────────────────────────────
 const NP_STEP0_KEY = {
   'np-loc': 'np_loc_step0',
@@ -2163,14 +2334,13 @@ function npStep0Init(pfx) {
   if (regLabel) regLabel.textContent = cfg.regLabel || 'Sin seleccionar';
   if (compLabel) compLabel.textContent = cfg.compLabel || 'Sin seleccionar';
   if (preview && cfg.nextNP) preview.textContent = '→ Próximo NP Nº: ' + cfg.nextNP;
-  // If already configured, pre-fill manual values
-  if (cfg.nextNP) {
-    const manualFields = npGetManual(pfx);
-    const npField = manualFields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
-    if (npField) {
-      npState[pfx].manualValues[npField.name] = String(cfg.nextNP);
+  // If already configured, pre-fill auto field values
+  const autoFields = getAutoFields(pfx);
+  autoFields.forEach(f => {
+    if (f.name && cfg[f.name]) {
+      npState[pfx].manualValues[f.name] = cfg[f.name];
     }
-  }
+  });
   npRenderManualInputs(pfx);
 }
 
@@ -2213,20 +2383,18 @@ fbSelectFile = async function(item, relativePath) {
     const el = document.getElementById(pfx+'-reg-label');
     if (el) el.textContent = item.name;
     fbClose();
-    // Load NP number and mapping
+    // Calculate auto fields (NP Nº, IMPO Nº, etc.) from Excel
     showMsg(pfx+'-step0-status','loading','Leyendo Registro NP...');
-    await npCargarUltimoNP(pfx, item.id, fbCurrentSiteId);
+    await npCalcAndApplyAutoFields(pfx, item.id, fbCurrentSiteId);
     await loadExcelHeadersAndShowMapping(pfx, item.id, fbCurrentSiteId);
-    // Update preview
-    const manualFields = npGetManual(pfx);
-    const npField = manualFields.find(f=>f.auto||f.name.toLowerCase().includes('np'));
-    if (npField && npState[pfx].manualValues[npField.name]) {
-      const nextNP = npState[pfx].manualValues[npField.name];
-      cfg.nextNP = nextNP;
-      npStep0SaveConfig(pfx, cfg);
-      const preview = document.getElementById(pfx+'-np-num-preview');
-      if (preview) preview.textContent = '→ Próximo NP Nº: ' + nextNP;
-    }
+    // Save computed values to step0 config
+    const autoFields = getAutoFields(pfx);
+    autoFields.forEach(f => {
+      if (npState[pfx].manualValues[f.name]) {
+        cfg[f.name] = npState[pfx].manualValues[f.name];
+      }
+    });
+    npStep0SaveConfig(pfx, cfg);
     document.getElementById(pfx+'-step0-status').innerHTML = '';
   } else {
     await _origFbSF_step0(item, relativePath);
