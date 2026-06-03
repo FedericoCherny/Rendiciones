@@ -603,6 +603,10 @@ function savePin(p)             { localStorage.setItem(ADMIN_PIN_KEY, p); }
 function getRendManualFields()  { return JSON.parse(localStorage.getItem('rend_manual_fields') || 'null') || []; }
 function saveRendManualFields(f){ localStorage.setItem('rend_manual_fields', JSON.stringify(f)); }
 function saveResults()          { try { localStorage.setItem('rend_results', JSON.stringify(results)); } catch(e){} }
+// Aliases for NP manual fields (used in fieldListGetters)
+function getNpManualFields(pfx)  { return npGetManual ? npGetManual(pfx||'np-loc') : []; }
+function saveNpManualFields(pfx,f){ if(npSaveManual) npSaveManual(pfx||'np-loc',f); }
+function renderNpManualFields(pfx){ if(npCfgRenderManual) npCfgRenderManual(pfx||'np-loc'); }
 
 // ── Navigation ─────────────────────────────────────────
 function switchPanel(name) {
@@ -675,24 +679,27 @@ function rendRemoveManualField(i) { const f=getRendManualFields(); f.splice(i,1)
 function rendAddManualField() { const f=getRendManualFields(); f.push({name:'',desc:''}); saveRendManualFields(f); renderRendManualFields(); }
 
 var fieldListGetters = {
-  'rend-ia':       [getRendFields,       saveRendFields,       renderRendFields],
-  'rend-manual':   [getRendManualFields, saveRendManualFields, renderRendManualFields],
-  'np-loc-ia':     [()=>npGetIA('np-loc'),  f=>npSaveIA('np-loc',f), ()=>npCfgRenderIA('np-loc')],
-  'np-loc-manual': [()=>npGetManual('np-loc'), f=>npSaveManual('np-loc',f), ()=>npCfgRenderManual('np-loc')],
-  'np-int-ia':     [()=>npGetIA('np-int'),  f=>npSaveIA('np-int',f), ()=>npCfgRenderIA('np-int')],
-  'np-int-manual': [()=>npGetManual('np-int'), f=>npSaveManual('np-int',f), ()=>npCfgRenderManual('np-int')],
+  'rend-ia':       [()=>getRendFields(),       f=>saveRendFields(f),       ()=>renderRendFields()],
+  'rend-manual':   [()=>getRendManualFields(),  f=>saveRendManualFields(f), ()=>renderRendManualFields()],
+  'np-loc-ia':     [()=>npGetIA('np-loc'),      f=>npSaveIA('np-loc',f),    ()=>npCfgRenderIA('np-loc')],
+  'np-loc-manual': [()=>npGetManual('np-loc'),  f=>npSaveManual('np-loc',f),()=>npCfgRenderManual('np-loc')],
+  'np-int-ia':     [()=>npGetIA('np-int'),      f=>npSaveIA('np-int',f),    ()=>npCfgRenderIA('np-int')],
+  'np-int-manual': [()=>npGetManual('np-int'),  f=>npSaveManual('np-int',f),()=>npCfgRenderManual('np-int')],
 };
 
 function reorderField(listKey, idx, dir) {
-  const [getter, setter, renderer] = fieldListGetters[listKey];
-  const fields = JSON.parse(JSON.stringify(getter()));
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= fields.length) return;
-  const tmp = fields[idx];
-  fields[idx] = fields[newIdx];
-  fields[newIdx] = tmp;
-  setter(fields);
-  renderer();
+  try {
+    if (!fieldListGetters || !fieldListGetters[listKey]) return;
+    const [getter, setter, renderer] = fieldListGetters[listKey];
+    const fields = JSON.parse(JSON.stringify(getter()));
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= fields.length) return;
+    const tmp = fields[idx];
+    fields[idx] = fields[newIdx];
+    fields[newIdx] = tmp;
+    setter(fields);
+    renderer();
+  } catch(e) { console.log('reorderField error:', e.message); }
 }
 
 
