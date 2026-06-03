@@ -647,6 +647,31 @@ function rendUpdateManualField(i, key, val) { const f=getRendManualFields(); f[i
 function rendRemoveManualField(i) { const f=getRendManualFields(); f.splice(i,1); saveRendManualFields(f); renderRendManualFields(); }
 function rendAddManualField() { const f=getRendManualFields(); f.push({name:'',desc:''}); saveRendManualFields(f); renderRendManualFields(); }
 
+const fieldListGetters = {
+  'rend-ia':       [getRendFields,          saveRendFields,          renderRendFields],
+  'rend-manual':   [getRendManualFields,    saveRendManualFields,    renderRendManualFields],
+  'np-ia':         [getNpFields,            saveNpFields,            renderNpFields],
+  'np-manual':     [getNpManualFields,      saveNpManualFields,      renderNpManualFields],
+  'np-loc-ia':     [()=>npGetIA('np-loc'),  f=>npSaveIA('np-loc',f), ()=>npCfgRenderIA('np-loc')],
+  'np-loc-manual': [()=>npGetManual('np-loc'), f=>npSaveManual('np-loc',f), ()=>npCfgRenderManual('np-loc')],
+  'np-int-ia':     [()=>npGetIA('np-int'),  f=>npSaveIA('np-int',f), ()=>npCfgRenderIA('np-int')],
+  'np-int-manual': [()=>npGetManual('np-int'), f=>npSaveManual('np-int',f), ()=>npCfgRenderManual('np-int')],
+};
+
+function reorderField(listKey, idx, dir) {
+  const [getter, setter, renderer] = fieldListGetters[listKey];
+  const fields = JSON.parse(JSON.stringify(getter()));
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= fields.length) return;
+  const tmp = fields[idx];
+  fields[idx] = fields[newIdx];
+  fields[newIdx] = tmp;
+  setter(fields);
+  renderer();
+}
+
+
+
 function renderNpFields() {
   const fields = getNpFields();
   document.getElementById('npFieldList').innerHTML = fields.map((f, i) => `
@@ -1905,29 +1930,6 @@ const npManualValues = {};
 const npFiles = [];
 
 // ── Drag to reorder fields ────────────────────────────
-const fieldListGetters = {
-  'rend-ia':       [getRendFields,          saveRendFields,          renderRendFields],
-  'rend-manual':   [getRendManualFields,    saveRendManualFields,    renderRendManualFields],
-  'np-ia':         [getNpFields,            saveNpFields,            renderNpFields],
-  'np-manual':     [getNpManualFields,      saveNpManualFields,      renderNpManualFields],
-  'np-loc-ia':     [()=>npGetIA('np-loc'),  f=>npSaveIA('np-loc',f), ()=>npCfgRenderIA('np-loc')],
-  'np-loc-manual': [()=>npGetManual('np-loc'), f=>npSaveManual('np-loc',f), ()=>npCfgRenderManual('np-loc')],
-  'np-int-ia':     [()=>npGetIA('np-int'),  f=>npSaveIA('np-int',f), ()=>npCfgRenderIA('np-int')],
-  'np-int-manual': [()=>npGetManual('np-int'), f=>npSaveManual('np-int',f), ()=>npCfgRenderManual('np-int')],
-};
-
-function reorderField(listKey, idx, dir) {
-  const [getter, setter, renderer] = fieldListGetters[listKey];
-  const fields = JSON.parse(JSON.stringify(getter()));
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= fields.length) return;
-  const tmp = fields[idx];
-  fields[idx] = fields[newIdx];
-  fields[newIdx] = tmp;
-  setter(fields);
-  renderer();
-}
-
 // ── NP Clear ──────────────────────────────────────────
 function npClearAll() {
   if (!confirm('¿Borrar todos los archivos y resultados de NP?')) return;
