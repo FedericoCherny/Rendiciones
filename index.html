@@ -554,6 +554,9 @@
             <label style="font-size:13px;color:var(--text2);white-space:nowrap">P.Total col:</label>
             <input type="text" id="np-loc-items-total-col" value="F" style="width:50px;padding:7px 10px;font-size:13px;font-family:monospace;text-transform:uppercase"
               onblur="tmplSaveItemRows('np-loc')" />
+            <label style="font-size:13px;color:var(--text2);white-space:nowrap">P.Unit col:</label>
+            <input type="text" id="np-loc-items-unit-col" value="E" style="width:50px;padding:7px 10px;font-size:13px;font-family:monospace;text-transform:uppercase"
+              onblur="tmplSaveItemRows('np-loc')" />
           </div>
         </div>
       </div>
@@ -730,6 +733,9 @@
               onblur="tmplSaveItemRows('np-int')" />
             <label style="font-size:13px;color:var(--text2);white-space:nowrap">P.Total col:</label>
             <input type="text" id="np-int-items-total-col" value="E" style="width:50px;padding:7px 10px;font-size:13px;font-family:monospace;text-transform:uppercase"
+              onblur="tmplSaveItemRows('np-int')" />
+            <label style="font-size:13px;color:var(--text2);white-space:nowrap">P.Unit col:</label>
+            <input type="text" id="np-int-items-unit-col" value="D" style="width:50px;padding:7px 10px;font-size:13px;font-family:monospace;text-transform:uppercase"
               onblur="tmplSaveItemRows('np-int')" />
           </div>
         </div>
@@ -2039,7 +2045,8 @@ async function npGenerateNPFiles(pfx, tmpl, state, destKey, dest) {
       const superv = supervField ? (state.manualValues[supervField.name]||'') : '';
       const lugar  = lugarField  ? (state.manualValues[lugarField.name]||'')  : '';
 
-      const fileName = `NP_${npNum||idx+1}_${(d.proveedor||'prov').split(' ')[0]}_${new Date().toISOString().slice(0,10)}.xlsx`;
+      const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+      const fileName = `NP_${npNum||idx+1}_${(d.proveedor||'prov').split(' ')[0].replace(/[^a-zA-Z0-9]/g,'')}_${ts}.xlsx`;
       btn.textContent = `⏳ Copiando plantilla (${idx+1}/${state.extracted.length})...`;
       showMsg(pfx+'-gen-status','loading',`Copiando plantilla para ${d.proveedor||''}...`);
 
@@ -2078,7 +2085,12 @@ async function npGenerateNPFiles(pfx, tmpl, state, destKey, dest) {
         body: JSON.stringify(copyBody)
       });
 
-      if (!copyResp.ok) throw new Error('Error al copiar plantilla: HTTP '+copyResp.status);
+      if (!copyResp.ok) {
+        if (copyResp.status === 409) {
+          throw new Error('Error al copiar plantilla: ya existe un archivo con ese nombre (409). Intentá de nuevo en unos segundos.');
+        }
+        throw new Error('Error al copiar plantilla: HTTP '+copyResp.status);
+      }
 
       // Step 2: Poll for copy completion (Location header has monitor URL)
       btn.textContent = `⏳ Esperando copia...`;
@@ -2998,8 +3010,9 @@ function tmplSaveItemRows(pfx) {
   const start = parseInt(document.getElementById(pfx+'-items-start')?.value)||8;
   const end   = parseInt(document.getElementById(pfx+'-items-end')?.value)||20;
   const tc    = (document.getElementById(pfx+'-items-total-col')?.value||'F').toUpperCase();
+  const uc    = (document.getElementById(pfx+'-items-unit-col')?.value||(pfx==='np-int'?'D':'E')).toUpperCase();
   const cur = tmplGetItemRows(pfx);
-  localStorage.setItem(TMPL_ITEM_ROWS_KEY[pfx], JSON.stringify({...cur, start, end, totalCol:tc}));
+  localStorage.setItem(TMPL_ITEM_ROWS_KEY[pfx], JSON.stringify({...cur, start, end, totalCol:tc, unitCol:uc}));
 }
 
 function tmplCellUpdate(pfx, i, key, val) {
@@ -3043,8 +3056,7 @@ function tmplRenderCellMap(pfx) {
 const _origNpCfgRender = npCfgRender;
 function npCfgRender(pfx) {
   _origNpCfgRender(pfx);
-  // Restore saved cell map into UI
-  const map = tmplGetCellMap(pfx);
+  // Restore saved cell map from localStorage
   const el = document.getElementById(pfx+'-cell-map-list');
   if (el) tmplRenderCellMap(pfx);
   // Restore item rows
@@ -3052,9 +3064,17 @@ function npCfgRender(pfx) {
   const s = document.getElementById(pfx+'-items-start');
   const e2 = document.getElementById(pfx+'-items-end');
   const tc = document.getElementById(pfx+'-items-total-col');
+  const uc = document.getElementById(pfx+'-items-unit-col');
   if (s) s.value = ir.start;
   if (e2) e2.value = ir.end;
   if (tc) tc.value = ir.totalCol;
+  if (uc) uc.value = ir.unitCol || (pfx==='np-int'?'D':'E');
+  // Restore template label
+  const tmpl = npGetTmpl(pfx);
+  const lbl = document.getElementById(pfx+'-tmpl-label');
+  const hint = document.getElementById(pfx+'-tmpl-hint');
+  if (lbl && tmpl.label) lbl.textContent = tmpl.label;
+  if (hint && tmpl.label) hint.textContent = 'Guardado. La app lo usará al generar la NP.';
 }
 
 // ── Admin panel ────────────────────────────────────────
