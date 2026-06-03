@@ -2519,14 +2519,27 @@ function mapModalClose() {
 
 function showMappingModal(target, excelHeaders, savedMapping, pendingAction) {
   let availableFields = [];
+  let autoFieldNames = [];
   if (target === 'rend') {
-    availableFields = [...getRendManualFields().filter(f=>f.name.trim()).map(f=>f.name), ...getRendFields().filter(f=>f.name.trim()).map(f=>f.name)];
+    const autoF = getAutoFields('rend').filter(f=>f.name.trim()&&f.formula==='ultimo+1');
+    autoFieldNames = autoF.map(f=>f.name);
+    availableFields = [
+      ...autoF.map(f=>f.name),
+      ...getRendManualFields().filter(f=>f.name.trim()).map(f=>f.name),
+      ...getRendFields().filter(f=>f.name.trim()).map(f=>f.name)
+    ];
   } else {
     const pfx = target;
-    availableFields = [...npGetManual(pfx).filter(f=>f.name.trim()).map(f=>f.name), ...npGetIA(pfx).filter(f=>f.name.trim()).map(f=>f.name)];
+    const autoF = getAutoFields(pfx).filter(f=>f.name.trim()&&f.formula==='ultimo+1');
+    autoFieldNames = autoF.map(f=>f.name);
+    availableFields = [
+      ...autoF.map(f=>f.name),
+      ...npGetManual(pfx).filter(f=>f.name.trim()).map(f=>f.name),
+      ...npGetIA(pfx).filter(f=>f.name.trim()).map(f=>f.name)
+    ];
   }
   const mapping = Object.keys(savedMapping).length > 0 ? savedMapping : autoSuggestMapping(excelHeaders, availableFields);
-  mapContext = { target, headers: excelHeaders, fields: availableFields, mapping, pendingAction };
+  mapContext = { target, headers: excelHeaders, fields: availableFields, mapping, pendingAction, autoFieldNames };
   const specialOpts = [
     {value:'__none__', label:'— No mapear —'},
     {value:'__archivo__', label:'📎 Nombre del archivo'},
@@ -2537,7 +2550,10 @@ function showMappingModal(target, excelHeaders, savedMapping, pendingAction) {
   body.innerHTML = excelHeaders.map((header, i) => {
     const current = mapping[i] || '__none__';
     const isMatched = current !== '__none__';
-    const allOpts = [...specialOpts, ...availableFields.map(f => ({value:f, label:f}))];
+    const allOpts = [...specialOpts, ...availableFields.map(f => ({
+      value: f,
+      label: (mapContext.autoFieldNames||[]).includes(f) ? '⚡ ' + f + ' (automático)' : f
+    }))];
     const options = allOpts.map(o => `<option value="${esc(o.value)}" ${o.value===current?'selected':''}>${esc(o.label)}</option>`).join('');
     return `<div class="map-row">
       <span class="map-col-idx">${String.fromCharCode(65+i)}</span>
@@ -2552,10 +2568,18 @@ function showMappingModal(target, excelHeaders, savedMapping, pendingAction) {
 }
 
 async function mapModalConfirm() {
-  const mapKey = mapContext.target === 'rend' ? REND_MAPPING_KEY : NP_KEYS[mapContext.target]?.map || NP_MAPPING_KEY;
+  const target = mapContext.target;
+  const mapKey = target === 'rend' ? REND_MAPPING_KEY : (NP_KEYS[target]?.map || NP_MAPPING_KEY);
   saveMapping(mapKey, mapContext.mapping);
   mapModalClose();
   if (mapContext.pendingAction) await mapContext.pendingAction(mapContext.mapping);
+  // Re-calc auto fields using the confirmed mapping
+  if (target !== 'rend' && npState[target]) {
+    const spCfg = npStep0GetConfig(target);
+    if (spCfg.regId || spCfg.regPath) {
+      await npCalcAndApplyAutoFields(target, spCfg.regId, spCfg.regSiteId);
+    }
+  }
 }
 
 async function loadExcelHeadersAndShowMapping(target, itemId, siteId) {
