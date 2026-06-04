@@ -988,8 +988,8 @@ function today() { const d=new Date(); return String(d.getDate()).padStart(2,'0'
 function showMsg(id, type, msg) {
   const el = document.getElementById(id);
   if (!el) return;
-  const c = { loading: 'status-loading', success: 'status-success', error: 'status-error' };
-  el.className = 'status-msg ' + (c[type] || '');
+  const cls = { loading: 'status-loading', success: 'status-success', error: 'status-error' };
+  el.className = 'status-msg ' + (cls[type] || '');
   el.textContent = type === 'loading' ? '⏳ ' + msg : msg;
   el.style.display = 'block';
 }
@@ -1412,12 +1412,24 @@ async function spConfirm() {
       const manualFields = getRendManualFields().filter(f=>f.name.trim());
       const savedMapping = getMapping(REND_MAPPING_KEY);
       const useMapping = Object.keys(savedMapping).length > 0;
+
+      // Find first empty row (don't rebuild sheet — preserve formatting)
+      let firstEmptyRendRow = 2;
+      for (let i=1; i<rows.length; i++) {
+        if (rows[i].every(c => c===null || c==='' || c===undefined)) {
+          firstEmptyRendRow = i + 1;
+          break;
+        }
+        firstEmptyRendRow = i + 2;
+      }
+
+      // Build rows to write
+      const newRows = [];
       results.forEach(r => {
         let newRow;
         if (useMapping && headers.length > 0) {
           newRow = buildRowFromMapping(savedMapping, headers, r, rendManualValues, manualFields, fields);
         } else {
-          // Fallback: match by header name
           newRow = new Array(Math.max(headers.length, fieldNames.length + 2 + manualFields.length)).fill('');
           headers.forEach((h, i) => {
             if (!h) return;
@@ -1430,20 +1442,21 @@ async function spConfirm() {
             if (ia) newRow[i] = r[ia.name] != null ? r[ia.name] : '';
           });
         }
-        rows.push(newRow);
+        newRows.push(newRow);
       });
-      const newWs = XLSX.utils.aoa_to_sheet(rows);
-      wb.Sheets[wb.SheetNames[0]] = newWs;
-      const wbOut = XLSX.write(wb, {type:'array', bookType:'xlsx'});
-      // Re-upload to same location
-      let ulUrl;
-      if (spDefaults.excelId) {
-        ulUrl = `https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/items/${spDefaults.excelId}/content`;
-      } else {
-        const ep2 = (spDefaults.excelPath||'').split('/').map(encodeURIComponent).join('/');
-        ulUrl = `https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/root:/${ep2}:/content`;
+      // Write via Graph Excel API — preserves all formatting
+      const rendExcelId = spDefaults.excelId;
+      const rendExcelBase = `https://graph.microsoft.com/v1.0/sites/${excelSite}/drive/items/${rendExcelId}/workbook/worksheets('Hoja1')/`;
+      for (let ri=0; ri<newRows.length; ri++) {
+        const rowNum = firstEmptyRendRow + ri;
+        const lastColRend = String.fromCharCode(64 + Math.max(newRows[ri].length, 1));
+        await fetch(
+          rendExcelBase + `range(address='A${rowNum}:${lastColRend}${rowNum}')`,
+          { method:'PATCH',
+            headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+            body: JSON.stringify({values:[newRows[ri]]}) }
+        );
       }
-      await fetch(ulUrl, {method:'PUT', headers:{Authorization:'Bearer '+token,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}, body:new Uint8Array(wbOut)});
 
     } else if (spMode === 'new') {
       btn.textContent = '⏳ Creando Excel...';
@@ -2468,44 +2481,64 @@ async function npConfirmSave(pfx) {
     }
 
     if (spMode==='existing') {
-      btn.textContent='\u23F3 Actualizando Excel...';
+      btn.textContent='⏳ Leyendo Registro NP...';
       const exSite=spD.excelS||siteId;
-      let dlResp;
-      if (spD.excelId) dlResp=await fetch(`https://graph.microsoft.com/v1.0/sites/${exSite}/drive/items/${spD.excelId}/content`,{headers:{Authorization:'Bearer '+token}});
-      else { const ep=spD.excelPath.split('/').map(encodeURIComponent).join('/'); dlResp=await fetch(`https://graph.microsoft.com/v1.0/sites/${exSite}/drive/root:/${ep}:/content`,{headers:{Authorization:'Bearer '+token}}); }
-      if (!dlResp.ok) throw new Error('No se pudo leer el Excel');
-      const ab=await dlResp.arrayBuffer();
-      const wb=XLSX.read(ab,{type:'array'});
-      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
-      const npHeaders=rows[0]||[];
-      const savedMap=getMapping(NP_KEYS[pfx].map);
-      const useMap=Object.keys(savedMap).length>0&&npHeaders.length>0;
+      const excelItemId = spD.excelId;
 
+      // Use Graph Excel API to read headers and find first empty row
+      // This avoids downloading/re-uploading which would lose formatting
+      const excelBase2 = `https://graph.microsoft.com/v1.0/sites/${exSite}/drive/items/${excelItemId}/workbook/worksheets('Hoja1')/`;
+
+      // Read used range to find first empty row
+      const usedResp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${exSite}/drive/items/${excelItemId}/workbook/worksheets('Hoja1')/usedRange?$select=address,values`,
+        {headers:{Authorization:'Bearer '+token}}
+      );
+      if (!usedResp.ok) throw new Error('No se pudo leer el Excel');
+      const usedData = await usedResp.json();
+      const allRows = usedData.values || [];
+      const npHeaders = allRows[0] || [];
+      const savedMap = getMapping(NP_KEYS[pfx].map);
+      const useMap = Object.keys(savedMap).length>0 && npHeaders.length>0;
+
+      // Find first completely empty row after headers
+      let firstEmptyRow = 2; // default: row 2 (1-indexed, row 1 = headers)
+      for (let i=1; i<allRows.length; i++) {
+        if (allRows[i].every(c => c===null || c==='' || c===undefined)) {
+          firstEmptyRow = i + 1; // +1 because Excel rows are 1-indexed
+          break;
+        }
+        firstEmptyRow = i + 2; // keep moving down
+      }
+
+      // Write each extracted record to the next empty row using Graph Excel API
       for (const d of state.extracted) {
+        btn.textContent=`⏳ Escribiendo fila ${firstEmptyRow}...`;
         let newRow;
         if (useMap) {
-          newRow=buildRowFromMapping(savedMap, npHeaders, d, state.manualValues, manualFields, iaFields);
+          newRow = buildRowFromMapping(savedMap, npHeaders, d, state.manualValues, manualFields, iaFields);
         } else {
-          newRow=new Array(Math.max(npHeaders.length,20)).fill('');
+          newRow = new Array(Math.max(npHeaders.length, 20)).fill('');
           npHeaders.forEach((h,i)=>{
-            if(!h)return;
+            if(!h) return;
             const mf=manualFields.find(f=>strSimilarity(f.name,String(h))>0.5);
             if(mf){newRow[i]=state.manualValues[mf.name]||'';return;}
             const ia=iaFields.find(f=>strSimilarity(f.name,String(h))>0.5);
-            if(ia)newRow[i]=d[ia.name]!=null?d[ia.name]:'';
-            if(String(h).toLowerCase().includes('fecha')&&!String(h).toLowerCase().includes('entrega'))newRow[i]=today();
+            if(ia) newRow[i]=d[ia.name]!=null?d[ia.name]:'';
+            if(String(h).toLowerCase().includes('fecha')&&!String(h).toLowerCase().includes('entrega')) newRow[i]=today();
           });
         }
-        rows.push(newRow);
-      }
 
-      const newWs=XLSX.utils.aoa_to_sheet(rows);
-      wb.Sheets[wb.SheetNames[0]]=newWs;
-      const wbOut=XLSX.write(wb,{type:'array',bookType:'xlsx'});
-      let ulUrl;
-      if(spD.excelId) ulUrl=`https://graph.microsoft.com/v1.0/sites/${exSite}/drive/items/${spD.excelId}/content`;
-      else { const ep=spD.excelPath.split('/').map(encodeURIComponent).join('/'); ulUrl=`https://graph.microsoft.com/v1.0/sites/${exSite}/drive/root:/${ep}:/content`; }
-      await fetch(ulUrl,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:new Uint8Array(wbOut)});
+        // Write row via Graph Excel API — only touches that specific row, no format changes
+        const lastCol = String.fromCharCode(64 + Math.max(newRow.length, 1));
+        await fetch(
+          excelBase2 + `range(address='A${firstEmptyRow}:${lastCol}${firstEmptyRow}')`,
+          { method:'PATCH',
+            headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+            body: JSON.stringify({values:[newRow]}) }
+        );
+        firstEmptyRow++;
+      }
 
     } else if (spMode==='new') {
       btn.textContent='\u23F3 Creando Excel...';
