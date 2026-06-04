@@ -2235,45 +2235,49 @@ async function npGenerateNPFiles(pfx, tmpl, state, destKey, dest) {
 
       if (items.length > templateItemRows) {
         const extraRows = items.length - templateItemRows;
-        btn.textContent = `⏳ Leyendo formato de filas...`;
+        btn.textContent = `⏳ Insertando filas extra...`;
 
-        // Read format of each column in the last item row BEFORE inserting
-        // so we can re-apply it to the new rows after pushing down
-        const colCount = ir.totalCol.charCodeAt(0) - 64; // e.g. F=6
-        const lastItemRange = `A${ir.end}:${ir.totalCol}${ir.end}`;
-        const preFmtResp = await fetch(
-          excelBase + `range(address='${lastItemRange}')?$select=columnIndex,address,format`,
-          {headers:{Authorization:'Bearer '+token}}
-        );
-        let cellFormats = null;
-        if (preFmtResp.ok) {
-          const preFmtData = await preFmtResp.json();
-          cellFormats = preFmtData; // store full range format
-        }
+        // Strategy: insert rows at ir.end one at a time,
+        // then use copyFrom to copy format from the adjacent item row above
+        // This preserves borders, colors and alignment cell by cell
+        const fmtSourceRow = ir.end - 1; // last item row before insertion (has correct format)
+        const lastCol = ir.totalCol;
 
-        // Insert rows one at a time at ir.end (the last item row), pushing it down each time
-        btn.textContent = `⏳ Insertando ${extraRows} filas...`;
         for (let e=0; e<extraRows; e++) {
+          const insertAt = ir.end + e; // as we insert, previous rows shift down
+
+          // Step 1: insert blank row
           await fetch(
-            excelBase + `range(address='A${ir.end}:${ir.totalCol}${ir.end}')/insert`,
-            { method:'POST', headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+            excelBase + `range(address='A${insertAt}:${lastCol}${insertAt}')/insert`,
+            { method:'POST',
+              headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
               body: JSON.stringify({shift:'Down'}) }
           );
-          await new Promise(r=>setTimeout(r,700));
-        }
+          await new Promise(r=>setTimeout(r,800));
 
-        // Re-apply saved format to each newly inserted row
-        if (cellFormats) {
-          btn.textContent = `⏳ Restaurando formato...`;
-          for (let e=0; e<extraRows; e++) {
-            const newRow = ir.end + e;
-            await fetch(
-              excelBase + `range(address='A${newRow}:${ir.totalCol}${newRow}')/format`,
-              { method:'PATCH', headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-                body: JSON.stringify(cellFormats.format||{}) }
-            );
-            await new Promise(r=>setTimeout(r,300));
-          }
+          // Step 2: copyFrom the row just above to copy format (not values)
+          const srcRow = fmtSourceRow; // always copy from the original source row
+          await fetch(
+            excelBase + `range(address='A${insertAt}:${lastCol}${insertAt}')/copyFrom`,
+            { method:'POST',
+              headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+              body: JSON.stringify({
+                source: { address: `A${srcRow}:${lastCol}${srcRow}` },
+                copyType: 'Formats',
+                skipBlanks: false,
+                transpose: false
+              }) }
+          );
+          await new Promise(r=>setTimeout(r,600));
+
+          // Step 3: clear any values that copyFrom may have brought over
+          await fetch(
+            excelBase + `range(address='A${insertAt}:${lastCol}${insertAt}')/clear`,
+            { method:'POST',
+              headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+              body: JSON.stringify({applyTo:'Contents'}) }
+          );
+          await new Promise(r=>setTimeout(r,400));
         }
         await new Promise(r=>setTimeout(r,800));
       }
