@@ -2235,18 +2235,47 @@ async function npGenerateNPFiles(pfx, tmpl, state, destKey, dest) {
 
       if (items.length > templateItemRows) {
         const extraRows = items.length - templateItemRows;
-        btn.textContent = `⏳ Insertando ${extraRows} filas extra...`;
-        // Insert rows at the LAST template item row (push down), copy format from row above
-        const insertRow = ir.end; // insert before last row to preserve border formatting
+        btn.textContent = `⏳ Leyendo formato de filas...`;
+
+        // Read format of each column in the last item row BEFORE inserting
+        // so we can re-apply it to the new rows after pushing down
+        const colCount = ir.totalCol.charCodeAt(0) - 64; // e.g. F=6
+        const lastItemRange = `A${ir.end}:${ir.totalCol}${ir.end}`;
+        const preFmtResp = await fetch(
+          excelBase + `range(address='${lastItemRange}')?$select=columnIndex,address,format`,
+          {headers:{Authorization:'Bearer '+token}}
+        );
+        let cellFormats = null;
+        if (preFmtResp.ok) {
+          const preFmtData = await preFmtResp.json();
+          cellFormats = preFmtData; // store full range format
+        }
+
+        // Insert rows one at a time at ir.end (the last item row), pushing it down each time
+        btn.textContent = `⏳ Insertando ${extraRows} filas...`;
         for (let e=0; e<extraRows; e++) {
           await fetch(
-            excelBase + `range(address='A${insertRow}:Z${insertRow}')/insert`,
+            excelBase + `range(address='A${ir.end}:${ir.totalCol}${ir.end}')/insert`,
             { method:'POST', headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-              body: JSON.stringify({shift:'Down', copyOrigin:'formatFromLeftOrAbove'}) }
+              body: JSON.stringify({shift:'Down'}) }
           );
-          await new Promise(r=>setTimeout(r,500));
+          await new Promise(r=>setTimeout(r,700));
         }
-        await new Promise(r=>setTimeout(r,1500));
+
+        // Re-apply saved format to each newly inserted row
+        if (cellFormats) {
+          btn.textContent = `⏳ Restaurando formato...`;
+          for (let e=0; e<extraRows; e++) {
+            const newRow = ir.end + e;
+            await fetch(
+              excelBase + `range(address='A${newRow}:${ir.totalCol}${newRow}')/format`,
+              { method:'PATCH', headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+                body: JSON.stringify(cellFormats.format||{}) }
+            );
+            await new Promise(r=>setTimeout(r,300));
+          }
+        }
+        await new Promise(r=>setTimeout(r,800));
       }
 
       btn.textContent = `\u23F3 Insertando items...`;
