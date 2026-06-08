@@ -2305,7 +2305,29 @@ async function npGenerateNPFiles(pfx, tmpl, state, destKey, dest) {
         if (items[r].p_total) await setCellVal(ir.totalCol+row, Number(items[r].p_total)||0);
       }
 
-            // Step 4: Convert to PDF via Graph
+            // Step 4: Remove print title rows before converting to PDF
+      btn.textContent = `⏳ Preparando PDF...`;
+      try {
+        // Get worksheet name
+        const wsListResp = await fetch(
+          `https://graph.microsoft.com/v1.0/sites/${destSiteId}/drive/items/${copiedItemId}/workbook/worksheets`,
+          {headers:{Authorization:'Bearer '+token}}
+        );
+        if (wsListResp.ok) {
+          const wsListData = await wsListResp.json();
+          const wsName = wsListData.value?.[0]?.name || 'Hoja1';
+          const encodedWs = encodeURIComponent(wsName);
+          // Clear print title rows (rows that repeat on each page)
+          await fetch(
+            `https://graph.microsoft.com/v1.0/sites/${destSiteId}/drive/items/${copiedItemId}/workbook/worksheets('${encodedWs}')/pageLayout`,
+            { method:'PATCH',
+              headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+              body: JSON.stringify({ printTitleRows: '', printTitleColumns: '' }) }
+          );
+        }
+      } catch(e) { console.log('Could not clear print titles:', e.message); }
+
+      // Convert to PDF via Graph
       btn.textContent = `⏳ Convirtiendo a PDF...`;
       showMsg(pfx+'-gen-status','loading','Convirtiendo a PDF...');
       await new Promise(r=>setTimeout(r,1000)); // let Excel API settle
