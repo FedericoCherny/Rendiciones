@@ -1032,9 +1032,14 @@ async function loadApiKeyFromSupabase() {
     const data = await res.json();
     if (data[0]?.value) {
       _cachedApiKey = data[0].value;
-      // Update analyzeBtn state
-      const btn = document.getElementById('analyzeBtn');
-      if (btn) btn.disabled = false;
+      console.log('API key loaded from Supabase OK');
+      // Re-enable analyze buttons if files already selected
+      ['analyzeBtn','np-loc-extract-btn','np-int-extract-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = false;
+      });
+    } else {
+      console.log('API key not found in Supabase app_config');
     }
   } catch(e) { console.log('Could not load API key:', e.message); }
 }
@@ -3408,6 +3413,14 @@ async function tryRestoreSession() {
   return false;
 }
 
+
+async function initApp() {
+  await loadApiKeyFromSupabase();
+  await initMsal().catch(()=>{});
+  // Re-check analyze button after API key loads
+  const btn = document.getElementById('analyzeBtn');
+  if (btn && files.length > 0) btn.disabled = !_cachedApiKey;
+}
 
 function onLoginSuccess() {
   document.getElementById('loginScreen').style.display = 'none';
