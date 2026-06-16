@@ -1241,7 +1241,7 @@ async function analyzeAll() {
         method: 'POST',
         headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514', max_tokens: 1000,
+          model: 'claude-sonnet-4-5', max_tokens: 1000,
           system: `Sos un asistente experto en análisis de comprobantes financieros argentinos. Extraé información y respondé SOLO con JSON válido, sin texto adicional ni markdown. Claves: ${activeFields.map(f=>`"${f.name}"`).join(', ')}. Si no encontrás un valor usá null.`,
           messages: [{ role:'user', content:[
             isPdf ? {type:'document',source:{type:'base64',media_type:mediaType,data:b64}} : {type:'image',source:{type:'base64',media_type:mediaType,data:b64}},
@@ -2056,7 +2056,7 @@ async function npExtractAll(pfx) {
       const res = await fetch('https://api.anthropic.com/v1/messages',{
         method:'POST',
         headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:[
+        body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:4000,messages:[{role:'user',content:[
           isPdf ? {type:'document',source:{type:'base64',media_type:'application/pdf',data:item.b64}}
                 : {type:'image',source:{type:'base64',media_type:item.file.type,data:item.b64}},
           {type:'text',text:prompt}
