@@ -915,6 +915,11 @@
   </div>
 
 <script>
+// ── Supabase ───────────────────────────────────────────
+const SUPA_URL = 'https://pamrmkiadojnypmaqzfm.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhbXJta2lhZG9qbnlwbWFxemZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1ODYzNzgsImV4cCI6MjA5NzE2MjM3OH0.LDFWO_oGKkVgnPRJfpzsYX8CwzpLI0tobL-eIFgJO_M';
+// supaFetch defined at top of script
+
 // ── Constants ──────────────────────────────────────────
 const ADMIN_PIN_KEY  = 'rend_admin_pin';
 const FIELDS_KEY     = 'rend_fields';
@@ -3309,8 +3314,6 @@ function tmplRenderCellMap(pfx) {
 // npCfgRender override removed - merged into original
 
 // ── Supabase Auth ─────────────────────────────────────
-const SUPA_URL = 'https://pamrmkiadojnypmaqzfm.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhbXJta2lhZG9qbnlwbWFxemZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1ODYzNzgsImV4cCI6MjA5NzE2MjM3OH0.LDFWO_oGKkVgnPRJfpzsYX8CwzpLI0tobL-eIFgJO_M';
 
 let currentUser = null;
 let currentSector = null;
@@ -3328,17 +3331,7 @@ const SECTOR_TABS = {
   'Servicios':      ['rend','cfg-rend'],
 };
 
-async function supaFetch(path, opts={}) {
-  const res = await fetch(SUPA_URL + path, {
-    ...opts,
-    headers: {
-      'apikey': SUPA_KEY,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {})
-    }
-  });
-  return res;
-}
+// supaFetch defined at top of script
 
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
