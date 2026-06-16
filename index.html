@@ -1025,8 +1025,27 @@ function getRendFields()  { return JSON.parse(localStorage.getItem(FIELDS_KEY) |
 function saveRendFields(f){ localStorage.setItem(FIELDS_KEY, JSON.stringify(f)); }
 function getNpFields()    { return JSON.parse(localStorage.getItem(NP_FIELDS_KEY) || 'null') || DEFAULT_NP_FIELDS; }
 function saveNpFields(f)  { localStorage.setItem(NP_FIELDS_KEY, JSON.stringify(f)); }
-function getApiKey()            { return localStorage.getItem(API_KEY_KEY) || ''; }
-function saveApiKey(k)          { localStorage.setItem(API_KEY_KEY, k); }
+let _cachedApiKey = '';
+function getApiKey() { return _cachedApiKey; }
+function saveApiKey(k) { _cachedApiKey = k; } // kept for compatibility
+
+async function loadApiKeyFromSupabase() {
+  try {
+    const session = JSON.parse(localStorage.getItem('daia_session')||'null');
+    if (!session?.token) return;
+    const res = await supaFetch('/rest/v1/app_config?select=value&key=eq.anthropic_api_key', {
+      headers: { Authorization: 'Bearer ' + session.token }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data[0]?.value) {
+      _cachedApiKey = data[0].value;
+      // Update analyzeBtn state
+      const btn = document.getElementById('analyzeBtn');
+      if (btn) btn.disabled = false;
+    }
+  } catch(e) { console.log('Could not load API key:', e.message); }
+}
 function getPin()               { return localStorage.getItem(ADMIN_PIN_KEY) || ''; }
 function savePin(p)             { localStorage.setItem(ADMIN_PIN_KEY, p); }
 function getRendManualFields()  { return JSON.parse(localStorage.getItem('rend_manual_fields') || 'null') || []; }
@@ -1195,7 +1214,7 @@ async function fileToBase64(file) {
 // ── Analysis (Rendiciones) ─────────────────────────────
 async function analyzeAll() {
   const apiKey = getApiKey();
-  if (!apiKey) { alert('Configurá la API key en Admin.'); switchPanel('admin'); return; }
+  if (!apiKey) { alert('Error de configuración. Contactá al administrador.'); return; }
   const activeFields = getRendFields().filter(f => f.name.trim());
   if (!activeFields.length) { alert('Configurá al menos un campo en Config Rendiciones.'); switchPanel('cfg-rend'); return; }
 
@@ -2019,7 +2038,7 @@ function npRenderFileList(pfx) {
 // ── Extract ───────────────────────────────────────────
 async function npExtractAll(pfx) {
   const apiKey = getApiKey();
-  if (!apiKey) { alert('Configurá la API key en Admin.'); return; }
+  if (!apiKey) { alert('Error: API key no disponible. Intentá recargar la página.'); return; }
   const state = npState[pfx];
   if (!state.files.length) return;
   const btn = document.getElementById(pfx+'-extract-btn');
@@ -3409,19 +3428,6 @@ async function tryRestoreSession() {
   return false;
 }
 
-function onLoginSuccess() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('app').style.display = '';
-  const nameEl = document.getElementById('user-name-display');
-  const sectorEl = document.getElementById('user-sector-display');
-  const initialEl = document.getElementById('user-initial');
-  const name = currentUser.nombre || currentUser.email.split('@')[0];
-  if (nameEl) nameEl.textContent = name;
-  if (sectorEl) sectorEl.textContent = currentSector;
-  if (initialEl) initialEl.textContent = name.charAt(0).toUpperCase();
-  applyTabAccess();
-  initApp();
-}
 
 function applyTabAccess() {
   const allowed = SECTOR_TABS[currentSector] || ['rend','cfg-rend'];
@@ -3577,46 +3583,40 @@ async function adminCreateUser() {
 
 function renderAdmin() {
   const el = document.getElementById('adminContent');
-  const pin = getPin();
-  if (!pin) {
-    el.innerHTML=`<div class="card"><div class="card-label">Primera vez — crear PIN de admin</div><label>Elegí un PIN (mínimo 4 dígitos)</label><input type="password" inputmode="numeric" id="newPin" placeholder="••••" maxlength="8" /><div class="gap"></div><button class="btn btn-primary" onclick="createPin()">Crear PIN y entrar</button></div>`;
-    adminUnlocked=false; return;
-  }
-  if (!adminUnlocked) {
-    el.innerHTML=`<div class="locked-overlay"><div style="font-size:48px;margin-bottom:12px">🔒</div><p style="color:var(--text2);font-size:14px;margin-bottom:20px">Ingresá el PIN de admin</p><input type="password" inputmode="numeric" id="pinInput" placeholder="PIN" maxlength="8" style="max-width:200px;margin:0 auto 16px;text-align:center" onkeyup="if(event.key==='Enter')checkPin()" /><button class="btn btn-primary" style="max-width:200px;margin:0 auto" onclick="checkPin()">Entrar</button></div>`;
+  if (!el) return;
+  // Access controlled by sector - only Admin can see this panel
+  if (currentSector !== 'Admin') {
+    el.innerHTML = '<div class="card"><p style="color:var(--text2)">Acceso restringido.</p></div>';
     return;
   }
-  el.innerHTML=`
+  el.innerHTML = `
     <div class="card">
-      <div class="card-label">API Key de Anthropic (Claude)</div>
-      <label>Clave compartida del equipo</label>
-      <input type="password" id="apiKeyInput" value="${esc(getApiKey())}" placeholder="sk-ant-..." oninput="saveApiKey(this.value)" />
-      <p class="hint">Se guarda en el dispositivo. Solo visible con el PIN.</p>
+      <div class="card-label">Gestión de usuarios</div>
+      <div id="admin-users-list"></div>
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px">
+        <div class="card-label" style="margin-bottom:8px">Crear usuario</div>
+        <input type="email" id="admin-new-email" placeholder="Email" style="margin-bottom:8px;font-size:14px" />
+        <input type="password" id="admin-new-user-pass" placeholder="Contraseña temporal (mín. 6 caracteres)" style="margin-bottom:8px;font-size:14px" />
+        <input type="text" id="admin-new-nombre" placeholder="Nombre completo" style="margin-bottom:8px;font-size:14px" />
+        <select id="admin-new-sector" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-family:inherit;font-size:14px;margin-bottom:12px">
+          <option value="">— Elegir sector —</option>
+          <option>Administración</option><option>RRHH</option><option>Coordinación</option>
+          <option>Ingeniería</option><option>Procesos</option><option>Compras</option>
+          <option>COMEX</option><option>Comercial</option><option>Servicios</option><option>Admin</option>
+        </select>
+        <button class="btn btn-primary" onclick="adminCreateUser()">Crear usuario</button>
+        <div id="admin-create-status" style="margin-top:8px"></div>
+      </div>
     </div>
     <div class="card">
       <div class="card-label">Integración SharePoint</div>
       <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Los archivos se suben con tu cuenta Microsoft.</p>
-      <p class="hint">📁 Comprobantes → <strong>Admin/Comprobantes</strong></p>
-      <p class="hint" style="margin-top:4px">📋 Datos → <strong>Admin/Pendientes</strong></p>
-      <p class="hint" style="margin-top:4px">📄 Proformas NP → <strong>Compras-COMEX</strong></p>
-      <div class="gap"></div>
       <button class="btn btn-secondary" onclick="toggleMsLogin()">🔑 Iniciar sesión con Microsoft</button>
-    </div>
-    <div class="card">
-      <div class="card-label">Seguridad</div>
-      <label>Cambiar PIN de admin</label>
-      <input type="password" inputmode="numeric" id="newPinChange" placeholder="Nuevo PIN" maxlength="8" />
-      <div class="gap"></div>
-      <button class="btn btn-secondary" onclick="changePin()">Cambiar PIN</button>
-    </div>
-    <div class="gap"></div>
-    <button class="btn btn-secondary" onclick="adminUnlocked=false;renderAdmin()">🔒 Cerrar sesión admin</button>
-    <div class="gap"></div>`;
+    </div>`;
+  adminLoadUsers();
 }
 
-function createPin() { const p=document.getElementById('newPin').value.trim(); if(p.length<4){alert('Mínimo 4 dígitos.');return;} savePin(p); adminUnlocked=true; renderAdmin(); }
-function checkPin() { if(document.getElementById('pinInput').value.trim()===getPin()){adminUnlocked=true;renderAdmin();}else{alert('PIN incorrecto');} }
-function changePin() { const p=document.getElementById('newPinChange').value.trim(); if(p.length<4){alert('Mínimo 4 dígitos.');return;} savePin(p); alert('PIN actualizado.'); }
+
 
 // ── Init ───────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
