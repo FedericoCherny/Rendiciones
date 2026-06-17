@@ -952,12 +952,12 @@
             <div class="sp-section-title" style="margin-top:4px">Plantilla a duplicar</div>
             <div class="sp-selected">
               <span id="sp-tmpl-label">Sin seleccionar</span>
-              <button class="sp-browse-btn" onclick="fbOpen('file','rend-tmpl')">Seleccionar</button>
+              <button class="sp-browse-btn" id="sp-tmpl-btn" onclick="fbOpen('file','rend-tmpl')">Seleccionar</button>
             </div>
             <div class="sp-section-title" style="margin-top:12px">Carpeta destino</div>
             <div class="sp-selected">
               <span id="sp-tmpl-destfolder-label">Sin seleccionar</span>
-              <button class="sp-browse-btn" onclick="fbOpen('folder','rend-tmpl-dest')">Seleccionar carpeta</button>
+              <button class="sp-browse-btn" id="sp-tmpl-dest-btn" onclick="fbOpen('folder','rend-tmpl-dest')">Seleccionar carpeta</button>
             </div>
           </div>
         </div>
@@ -1521,6 +1521,12 @@ async function sendToSharePoint() {
   document.getElementById('sp-newfolder-label').textContent = spDefaults.newFolderLabel || 'Sin seleccionar';
   document.getElementById('sp-tmpl-label').textContent = spDefaults.tmplLabel || 'Sin seleccionar';
   document.getElementById('sp-tmpl-destfolder-label').textContent = spDefaults.tmplDestLabel || 'Sin seleccionar';
+  document.getElementById('sp-tmpl-btn').onclick = () => fbOpen('file', 'rend-tmpl');
+  document.getElementById('sp-tmpl-dest-btn').onclick = () => fbOpen('folder', 'rend-tmpl-dest');
+  document.getElementById('sp-confirm-btn').onclick = () => spConfirm();
+  document.querySelector('#sp-folder-display button').onclick = () => fbOpen('folder', 'comprobantes');
+  document.querySelector('#sp-existing-section button').onclick = () => fbOpen('file', 'excel');
+  document.querySelector('#sp-new-section button').onclick = () => fbOpen('folder', 'newfolder');
   spSetMode(spMode);
   document.getElementById('spModal').classList.remove('hidden');
 }
@@ -2631,6 +2637,8 @@ function npShowModal(pfx) {
   document.getElementById('sp-folder-label').textContent = spD.comprobantesLabel || 'Sin seleccionar';
   document.getElementById('sp-excel-label').textContent  = spD.excelLabel  || 'Sin seleccionar';
   document.getElementById('sp-newfolder-label').textContent = spD.newFolderLabel || 'Sin seleccionar';
+  document.getElementById('sp-tmpl-label').textContent = spD.tmplLabel || 'Sin seleccionar';
+  document.getElementById('sp-tmpl-destfolder-label').textContent = spD.tmplDestLabel || 'Sin seleccionar';
   document.getElementById('spModal').dataset.target = pfx;
   spSetMode(spD.mode||'existing');
   document.getElementById('spModal').classList.remove('hidden');
@@ -2638,6 +2646,8 @@ function npShowModal(pfx) {
   document.querySelector('#sp-folder-display button').onclick  = ()=>fbOpen('folder', pfx+'-comprobantes');
   document.querySelector('#sp-existing-section button').onclick = ()=>fbOpen('file',   pfx+'-excel');
   document.querySelector('#sp-new-section button').onclick     = ()=>fbOpen('folder', pfx+'-newfolder');
+  document.getElementById('sp-tmpl-btn').onclick = ()=>fbOpen('file', pfx+'-tmpl-sp');
+  document.getElementById('sp-tmpl-dest-btn').onclick = ()=>fbOpen('folder', pfx+'-tmpl-sp-dest');
 }
 
 // Extend fbSelectCurrent/File for NP prefixes
@@ -2656,6 +2666,9 @@ fbSelectCurrent = function() {
   } else if (fbTarget===pfx+'-newfolder') {
     spD.newFolder=path; spD.newFolderLabel=label; spD.newFolderId=itemId; spD.newFolderS=fbCurrentSiteId;
     document.getElementById('sp-newfolder-label').textContent=label;
+  } else if (fbTarget===pfx+'-tmpl-sp-dest') {
+    spD.tmplDestFolder=path; spD.tmplDestLabel=label; spD.tmplDestId=itemId; spD.tmplDestS=fbCurrentSiteId;
+    document.getElementById('sp-tmpl-destfolder-label').textContent=label;
   }
   npSaveSp(pfx,spD);
   fbClose();
@@ -2671,6 +2684,13 @@ fbSelectFile = async function(item, relativePath) {
     npSaveSp(pfx,spD);
     fbClose();
     await npCargarUltimoNP(pfx, item.id, fbCurrentSiteId);
+    await loadExcelHeadersAndShowMapping(pfx, item.id, fbCurrentSiteId);
+  } else if (pfx && fbTarget===pfx+'-tmpl-sp') {
+    const spD = npGetSp(pfx);
+    spD.tmplPath=relativePath; spD.tmplId=item.id; spD.tmplS=fbCurrentSiteId; spD.tmplLabel=item.name;
+    document.getElementById('sp-tmpl-label').textContent=item.name;
+    npSaveSp(pfx,spD);
+    fbClose();
     await loadExcelHeadersAndShowMapping(pfx, item.id, fbCurrentSiteId);
   } else {
     await _origFbSF3(item, relativePath);
@@ -2729,6 +2749,7 @@ async function npConfirmSave(pfx) {
   if (spMode==='local') { exportExcel(); spModalClose(); return; }
   if (spMode==='existing'&&!spD.excelId&&!spD.excelPath){alert('Seleccion\u00e1 un Excel destino.');return;}
   if (spMode==='new'&&!spD.newFolderId&&!spD.newFolder){alert('Seleccion\u00e1 una carpeta destino.');return;}
+  if (spMode==='template'&&(!spD.tmplId||(!spD.tmplDestId&&!spD.tmplDestFolder))){alert('Seleccion\u00e1 la plantilla y la carpeta destino.');return;}
 
   btn.disabled=true; const orig=btn.textContent; btn.textContent='\u23F3 Conectando...';
   const state = npState[pfx];
@@ -2854,6 +2875,82 @@ async function npConfirmSave(pfx) {
       if(spD.newFolderId) newUrl=`https://graph.microsoft.com/v1.0/sites/${newSite}/drive/items/${spD.newFolderId}:/${encodeURIComponent(fileName)}:/content`;
       else { const ef=(spD.newFolder||NP_FOLDER).split('/').map(encodeURIComponent).join('/'); newUrl=`https://graph.microsoft.com/v1.0/sites/${newSite}/drive/root:/${ef}/${encodeURIComponent(fileName)}:/content`; }
       await fetch(newUrl,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:new Uint8Array(wbOut2)});
+
+    } else if (spMode==='template') {
+      btn.textContent='⏳ Copiando plantilla...';
+      const tmplSite = spD.tmplS || siteId;
+      const destSite = spD.tmplDestS || siteId;
+      const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+      const npLabel = pfx === 'np-loc' ? 'NP_Local' : 'NP_Internacional';
+      const newFileName = `${npLabel}_${ts}.xlsx`;
+
+      const copyBody = spD.tmplDestId
+        ? { parentReference: { id: spD.tmplDestId }, name: newFileName }
+        : { parentReference: { path: '/drive/root:/' + (spD.tmplDestFolder||'') }, name: newFileName };
+
+      const copyResp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${tmplSite}/drive/items/${spD.tmplId}/copy`,
+        { method:'POST', headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'}, body: JSON.stringify(copyBody) }
+      );
+      if (copyResp.status !== 202 && !copyResp.ok) {
+        if (copyResp.status === 409) throw new Error('Ya existe un archivo con ese nombre. Probá de nuevo.');
+        throw new Error('Error al copiar plantilla: HTTP '+copyResp.status);
+      }
+      await new Promise(r=>setTimeout(r,2500));
+
+      btn.textContent='⏳ Buscando archivo copiado...';
+      let listUrl;
+      if (spD.tmplDestId) {
+        listUrl = `https://graph.microsoft.com/v1.0/sites/${destSite}/drive/items/${spD.tmplDestId}/children?$select=id,name`;
+      } else {
+        const ep = (spD.tmplDestFolder||'').split('/').map(encodeURIComponent).join('/');
+        listUrl = `https://graph.microsoft.com/v1.0/sites/${destSite}/drive/root:/${ep}:/children?$select=id,name`;
+      }
+      const listResp = await fetch(listUrl, {headers:{Authorization:'Bearer '+token}});
+      const listData = await listResp.json();
+      const copiedItem = (listData.value||[]).find(f => f.name === newFileName);
+      if (!copiedItem) throw new Error('No se encontró el archivo copiado. Intentá de nuevo.');
+      const copiedItemId = copiedItem.id;
+
+      btn.textContent='⏳ Insertando datos...';
+      const sheetsRespT = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${destSite}/drive/items/${copiedItemId}/workbook/worksheets`,
+        {headers:{Authorization:'Bearer '+token}}
+      );
+      const sheetsDataT = await sheetsRespT.json();
+      const sheetNameT = sheetsDataT.value?.[0]?.name || 'Hoja1';
+      const excelBaseTmpl = `https://graph.microsoft.com/v1.0/sites/${destSite}/drive/items/${copiedItemId}/workbook/worksheets('${encodeURIComponent(sheetNameT)}')/`;
+
+      const usedRespT = await fetch(excelBaseTmpl + `usedRange?$select=values`, {headers:{Authorization:'Bearer '+token}});
+      const usedDataT = await usedRespT.json();
+      const tmplHeadersT = (usedDataT.values?.[0] || []).map(h => String(h||''));
+
+      const savedMapT = getMapping(NP_KEYS[pfx].map);
+      const useMapT = Object.keys(savedMapT).length > 0 && tmplHeadersT.length > 0;
+
+      for (let ri=0; ri<state.extracted.length; ri++) {
+        const d = state.extracted[ri];
+        let newRow;
+        if (useMapT) {
+          newRow = buildRowFromMapping(savedMapT, tmplHeadersT, d, state.manualValues, manualFields, iaFields);
+        } else {
+          newRow = new Array(Math.max(tmplHeadersT.length, 20)).fill('');
+          tmplHeadersT.forEach((h,i)=>{
+            if(!h) return;
+            const mf=manualFields.find(f=>strSimilarity(f.name,String(h))>0.5);
+            if(mf){newRow[i]=state.manualValues[mf.name]||'';return;}
+            const ia=iaFields.find(f=>strSimilarity(f.name,String(h))>0.5);
+            if(ia) newRow[i]=d[ia.name]!=null?d[ia.name]:'';
+            if(String(h).toLowerCase().includes('fecha')&&!String(h).toLowerCase().includes('entrega')) newRow[i]=today();
+          });
+        }
+        const rowNum = 2 + ri;
+        const lastCol = String.fromCharCode(64 + Math.max(newRow.length, 1));
+        await fetch(
+          excelBaseTmpl + `range(address='A${rowNum}:${lastCol}${rowNum}')`,
+          { method:'PATCH', headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'}, body: JSON.stringify({values:[newRow]}) }
+        );
+      }
     }
 
     spModalClose();
