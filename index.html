@@ -44,6 +44,7 @@
 
     /* ── Sidebar ── */
     .sidebar { display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--border); flex-shrink: 0; width: 240px; transition: width 0.2s ease; overflow: hidden; }
+    .sidebar.collapsed { overflow: visible; }
     .sidebar.collapsed { width: 64px; }
     .sidebar-header { padding: 18px 16px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; min-height: 56px; }
     .sidebar-header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; }
@@ -3341,12 +3342,12 @@ async function loadExcelHeadersAndShowMapping(target, itemId, siteId) {
       `https://graph.microsoft.com/v1.0/sites/${sid}/drive/items/${itemId}/content`,
       {headers:{Authorization:'Bearer '+token}}
     );
-    if (!resp.ok) return;
+    if (!resp.ok) { alert('No se pudo leer el archivo Excel seleccionado (HTTP '+resp.status+').'); return; }
     const ab = await resp.arrayBuffer();
     const wb = XLSX.read(ab, {type:'array'});
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
     const headers = (rows[0] || []).map(h => String(h||''));
-    if (!headers.length) return;
+    if (!headers.length) { alert('El archivo seleccionado no tiene encabezados en la primera fila.'); return; }
     const mapKey = target === 'rend' ? REND_MAPPING_KEY : (NP_KEYS[target]?.map || NP_MAPPING_KEY);
     const savedMapping = getMapping(mapKey);
 
@@ -3380,6 +3381,7 @@ async function loadExcelHeadersAndShowMapping(target, itemId, siteId) {
     showMappingModal(target, headers, savedMapping, pendingAction);
   } catch(e) {
     console.log('Could not load Excel headers:', e.message);
+    alert('Error al leer el archivo: ' + e.message);
   }
 }
 
