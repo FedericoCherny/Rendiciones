@@ -1422,6 +1422,7 @@ function renderRendResults() {
   }).join('');
 
   area.innerHTML = `
+    ${manualSection}
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <button class="btn btn-green btn-sm" onclick="exportExcel()">⬇ Excel local</button>
       <button class="btn btn-primary btn-sm" onclick="sendToSharePoint()">☁️ SharePoint</button>
