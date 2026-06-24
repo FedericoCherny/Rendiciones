@@ -107,6 +107,8 @@
 
     input, textarea, select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 15px; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
     input:focus, textarea:focus { border-color: var(--text3); }
+    input[type=checkbox] { width: 16px; height: 16px; padding: 0; flex-shrink: 0; -webkit-appearance: checkbox; appearance: checkbox; accent-color: var(--blue); cursor: pointer; }
+    input[type=radio] { width: auto; padding: 0; }
     label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 6px; }
 
     .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: var(--radius); font-size: 16px; font-weight: 500; font-family: inherit; cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s; }
