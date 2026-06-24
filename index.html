@@ -50,6 +50,7 @@
     .sidebar-header-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
     .sidebar-logo { display: block; margin: 0 auto 10px; max-width: 150px; width: 100%; height: auto; }
     .sidebar.collapsed .sidebar-logo { max-width: 32px; }
+    .sidebar-logo.temp-bg-fix { background: #fff; padding: 6px; border-radius: 6px; }
     .sidebar-header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; }
     .sidebar-header h1 span { color: var(--text2); font-weight: 400; font-size: 12px; margin-left: 5px; }
     .sidebar-header p { font-size: 11px; color: var(--text2); margin-top: 2px; white-space: nowrap; overflow: hidden; }
@@ -331,7 +332,7 @@
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <img src="icons/logo-aeration.png" alt="Aeration Argentina" class="sidebar-logo" />
+      <img src="icons/logo-aeration.png" alt="Aeration" class="sidebar-logo" id="sidebar-logo-img" />
       <div class="sidebar-header-row">
         <div class="sidebar-header-text">
           <h1>MAIA <span>v1.0</span></h1>
@@ -3952,6 +3953,12 @@ if (localStorage.getItem('daia_sidebar_collapsed') === '1') {
 }
 
 function applyEmpresaSelector() {
+  const logoImg = document.getElementById('sidebar-logo-img');
+  if (logoImg) {
+    logoImg.src = currentEmpresa === 'AS' ? 'icons/logo-aeration-servicios.png' : 'icons/logo-aeration.png';
+    logoImg.classList.toggle('temp-bg-fix', currentEmpresa === 'AS');
+  }
+
   const sel = document.getElementById('empresa-selector');
   if (!sel) return;
   if (currentEmpresas.length <= 1) {
