@@ -277,6 +277,12 @@
     .login-logo h1 { font-size:28px; font-weight:700; color:var(--text); }
     .login-logo h1 span { font-size:14px; font-weight:400; color:var(--text3); }
     .login-logo p { font-size:13px; color:var(--text2); margin-top:4px; }
+    .empresa-select-card { display:flex; flex-direction:column; align-items:center; gap:14px; padding:24px 20px; border:1.5px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; background:var(--surface2); transition:border-color 0.15s, background 0.15s, transform 0.1s; }
+    .empresa-select-card:hover { border-color:var(--blue); background:var(--blue-bg); transform:translateY(-1px); }
+    .empresa-select-card img { max-width:170px; width:100%; height:auto; }
+    .empresa-select-card .empresa-select-label { font-size:14px; font-weight:600; color:var(--text); }
+    .empresa-select-card.has-transparent-logo { background:#ffffff; }
+    .empresa-select-card.has-transparent-logo:hover { background:#f0f5ff; }
     .login-label { display:block; font-size:13px; color:var(--text2); margin-bottom:6px; font-weight:500; }
     .login-input { width:100%; padding:11px 14px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface2); color:var(--text); font-family:inherit; font-size:14px; outline:none; box-sizing:border-box; }
     .login-input:focus { border-color:var(--blue); }
@@ -308,6 +314,16 @@
       <button class="btn btn-primary" onclick="doLogin()" id="login-btn" style="width:100%;padding:14px">
         Iniciar sesión
       </button>
+    </div>
+  </div>
+
+  <div id="empresaSelectScreen" class="login-screen" style="display:none">
+    <div class="login-card" style="max-width:460px">
+      <div class="login-logo" style="margin-bottom:18px">
+        <h1 style="font-size:20px">¿Con qué empresa querés trabajar?</h1>
+        <p>Podés cambiarla más adelante desde el selector arriba</p>
+      </div>
+      <div id="empresa-select-options" style="display:flex;flex-direction:column;gap:12px"></div>
     </div>
   </div>
 
@@ -3736,11 +3752,8 @@ async function doLogin() {
     currentUser = { ...data.user, ...profile, token: data.access_token, refresh: data.refresh_token };
     currentSector = profile.sector;
     currentEmpresas = (profile.empresas || 'AA,AS').split(',').map(s=>s.trim()).filter(Boolean);
-    currentEmpresa = localStorage.getItem('daia_empresa_activa');
-    if (!currentEmpresas.includes(currentEmpresa)) currentEmpresa = currentEmpresas[0] || 'AA';
-    localStorage.setItem('daia_empresa_activa', currentEmpresa);
     localStorage.setItem('daia_session', JSON.stringify({ token: data.access_token, refresh: data.refresh_token, user: currentUser, sector: currentSector, empresas: currentEmpresas }));
-    onLoginSuccess();
+    onLoginSuccess(true);
   } catch(e) {
     errEl.textContent = e.message;
     errEl.style.display = 'block';
@@ -3758,6 +3771,7 @@ async function doLogout() {
   currentUser = null; currentSector = null; msAccount = null;
   currentEmpresas = ['AA','AS']; currentEmpresa = 'AA';
   document.getElementById('app').style.display = 'none';
+  document.getElementById('empresaSelectScreen').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('login-pass').value = '';
   document.getElementById('login-error').style.display = 'none';
@@ -3840,9 +3854,46 @@ function migrateOldStorageToAA() {
   localStorage.setItem('daia_migrated_empresa_v1', '1');
 }
 
-function onLoginSuccess() {
+function onLoginSuccess(isFreshLogin) {
   migrateOldStorageToAA();
   document.getElementById('loginScreen').style.display = 'none';
+
+  if (isFreshLogin && currentEmpresas.length > 1) {
+    showEmpresaSelectScreen();
+  } else {
+    if (!currentEmpresas.includes(currentEmpresa)) currentEmpresa = currentEmpresas[0] || 'AA';
+    localStorage.setItem('daia_empresa_activa', currentEmpresa);
+    continueLoginAfterEmpresa();
+  }
+}
+
+function showEmpresaSelectScreen() {
+  const el = document.getElementById('empresa-select-options');
+  const cards = [];
+  if (currentEmpresas.includes('AA')) {
+    cards.push(`
+      <div class="empresa-select-card has-transparent-logo" onclick="confirmEmpresaSelection('AA')">
+        <img src="icons/logo-aeration.png" alt="Aeration Argentina" />
+      </div>`);
+  }
+  if (currentEmpresas.includes('AS')) {
+    cards.push(`
+      <div class="empresa-select-card has-transparent-logo" onclick="confirmEmpresaSelection('AS')">
+        <img src="icons/logo-aeration-servicios.png" alt="Aeration Servicios" />
+      </div>`);
+  }
+  el.innerHTML = cards.join('');
+  document.getElementById('empresaSelectScreen').style.display = 'flex';
+}
+
+function confirmEmpresaSelection(empresa) {
+  currentEmpresa = empresa;
+  localStorage.setItem('daia_empresa_activa', empresa);
+  document.getElementById('empresaSelectScreen').style.display = 'none';
+  continueLoginAfterEmpresa();
+}
+
+function continueLoginAfterEmpresa() {
   document.getElementById('app').style.display = '';
   const name = currentUser.nombre || currentUser.email.split('@')[0];
   const nameEl = document.getElementById('user-name-display');
@@ -4192,7 +4243,7 @@ if ('serviceWorker' in navigator) {
 (async () => {
   const hasSession = await tryRestoreSession();
   if (hasSession) {
-    onLoginSuccess();
+    onLoginSuccess(false);
   } else {
     // Show login screen (already visible by default via style)
     setTimeout(() => document.getElementById('login-email')?.focus(), 100);
